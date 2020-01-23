@@ -1,16 +1,20 @@
 ---
 title: "rmarkdown_exploration"
 author: "Ansley"
-date: "1/23/2020"
-output: html_document
+date: last updated `r format(Sys.time(), "%d, %B, %Y")`.
+output: 
+  html_document:
+  theme: cerulean
+  toc: TRUE
+  toc_float: true
 ---
 ```{r}    
 2+2
-
-install.packages("rmarkdown")
-install.packages("gapminder")
-install.packages("tibble")
-install.packages("DT")
+?knitr()
+#install.packages("rmarkdown")
+#install.packages("gapminder")
+#install.packages("tibble")
+#install.packages("DT")
 library(rmarkdown)
 library(gapminder)
 library(tibble)
@@ -19,8 +23,11 @@ library(DT)
 ```
 
 
-```{r} 
+```{r gapminder view, echo = FALSE} 
 gapminder
+```
+
+```{r}
 mtcars
 #command, option, i
 mtcars ["mpg"] #could also do mtcars$mpg
@@ -29,8 +36,7 @@ mean(mtcars$mpg)
 mtcars[["cyl"]] #pulls OUT of dataset
 mtcars["cyl"] #Just pulls, but you can still see ID
 
-
-
+unique(mtcars$cyl, incomparable = FALSE) #Shows the unique values
 
 ```
 
