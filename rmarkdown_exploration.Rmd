@@ -11,6 +11,7 @@ output:
 ```{r}    
 2+2
 ?knitr()
+options(digits=3) #rounds output, global
 #install.packages("rmarkdown")
 #install.packages("gapminder")
 #install.packages("tibble")
