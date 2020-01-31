@@ -39,6 +39,11 @@ library(scales)
 knitr::opts_chunk$set(error = TRUE, warning = FALSE)
 ```
 
+```{r}
+#Can do geom_boxplot() +
+#geom_jitter()
+```
+
 
 ## Exercise 1: Overlapping Points
 
@@ -47,7 +52,7 @@ or `size` argument (attribution: ["R for data science"](https://r4ds.had.co.nz/d
 
 ```{r, fig.width = 5, fig.height = 2}
 ggplot(mpg, aes(cty, hwy)) + 
-  geom_point()
+  geom_point(alpha = 0.1)
 ```
 
 
@@ -61,9 +66,8 @@ also notice that `ggplot2` ignores the grouping of a tibble!
 
 ```{r, fig.width = 5, fig.height = 2}
 gapminder %>% 
-  group_by(country) %>% 
   ggplot(aes(year, lifeExp)) +
-  geom_line()
+  geom_line(aes(group = country), alpha = 0.1)
 ```
 
 
@@ -77,7 +81,8 @@ gapminder %>%
 ```{r, fig.width = 5, fig.height = 2}
 ggplot(gapminder, aes(gdpPercap, lifeExp)) +
   geom_point(alpha = 0.2) +
-  scale_x_log10()
+  scale_x_log10(labels = scales::comma_format()) +
+  facet_wrap(vars(continent))
 ```
 
 ### 3(b) Bubble Plot
@@ -89,12 +94,14 @@ ggplot(gapminder, aes(gdpPercap, lifeExp)) +
 - Use `shape=21` to distinguish between `fill` (interior) and `color` (exterior). 
 
 ```{r, fig.width = 5, fig.height = 2}
-gapminder %>% 
+a<- gapminder %>% 
   filter(continent != "Oceania") %>% 
-  ggplot(aes(gdpPercap, lifeExp)) +
-  facet_wrap(~ continent) +
-  geom_point(alpha = 0.2) +
+  ggplot(aes(gdpPercap, lifeExp, size = pop)) +
+  facet_wrap(~ continent, nrow = 1, scales = "free") +
+  geom_point(alpha = 0.2, shape = 21, col = "cyan4") +
   scale_x_log10(labels = scales::comma_format())
+
+a + scale_size_area("Population")
 ```
 
 A list of shapes can be found [at the bottom of the `scale_shape` documentation](https://ggplot2.tidyverse.org/reference/scale_shape.html).
@@ -105,7 +112,7 @@ Instead of alpha transparency, suppose you're wanting to fix the overplotting is
 
 ```{r, fig.width = 5, fig.height = 2}
 ggplot(gapminder) +
-  geom_point(aes(gdpPercap, lifeExp, size = 0.1)) +
+  geom_point(aes(gdpPercap, lifeExp, shape = ".")) +
   scale_x_log10(labels = scales::dollar_format())
 ```
 
@@ -119,6 +126,7 @@ The following mock data set marks the (x,y) position of a caribou at four time p
 - Add the `time` label with `geom_text()`.
 
 ```{r, fig.width = 5, fig.height = 2}
+b <- 
 tribble(
   ~time, ~x, ~y,
   1, 0.3, 0.3,
@@ -127,7 +135,9 @@ tribble(
   4, 0.4, 0.5
 ) %>% 
   ggplot(aes(x, y)) + 
-  geom_line()
+  geom_path(arrow = arrow()) 
+
+b + geom_text(aes(label = time), nudge_x = 0.02, nudge_y = 0.02, color = "cyan4")
 ```
 
 ## Exercise 5: Life expectancies in Africa
@@ -144,7 +154,8 @@ gapminder %>%
   ggplot(aes(country, lifeExp)) + 
   geom_point() +
   geom_boxplot() +
-  scale_x_discrete()
+  geom_jitter() + 
+  scale_x_discrete(labels = abbreviate)
 ```
 
 ### 5(b) Ridgeplots
@@ -152,11 +163,13 @@ gapminder %>%
 We're starting with the same plot as above, but instead of the points + boxplot, try a ridge plot instead using `ggridges::geom_density_ridges()`, and adjust the `bandwidth`.
 
 ```{r, fig.width = 5, fig.height = 2}
+ 
 gapminder %>% 
   filter(continent == "Americas") %>% 
-  ggplot(aes(country, lifeExp)) + 
-  geom_point() +
-  geom_boxplot()
+  ggplot(aes(lifeExp, country)) + 
+  ggridges::geom_density_ridges(mapping = aes(lifeExp, country)) +
+  stat_density_ridges(geom = "density_ridges_gradient", bandwidth = 5) 
+
 ```
 
 ## Exercise 6: Bar plot madness
@@ -167,14 +180,20 @@ gapminder %>%
 - Change the x-axis so that it doesn't appear to be continuous.
   - Hint: Transform the variable!
 - Also change the colors of the bar fills, as well as the lines.
-- Put the bars for transmission side-by-side with their own colour.
+- Put the bars for transmission side-by-side with their own colour. 
 - Capitalize the legend title.
 
 ```{r, fig.width = 5, fig.height = 2}
+mtcars$cylF<-as.factor(mtcars$cyl)
+
 mtcars %>% 
   mutate(transmission = if_else(am == 0, "automatic", "manual")) %>% 
-  ggplot(aes(cyl)) +
-  geom_bar(aes(color = transmission))
+  ggplot(aes(fill = transmission, y = (..count..)/sum(..count..), x = cylF)) +
+  geom_bar(position="dodge", color = "cyan4", width = 0.5) +
+  scale_y_continuous(labels = percent) +
+  scale_fill_discrete(name = "Cylinders") +
+  ylab("Percentage") +
+  xlab("Number of Cylinders")
 ```
 
 ### 6(b) Bar heights already calculated
@@ -189,8 +208,11 @@ Here's the number of people having a certain hair colour from a sample of 592 pe
 Fix the following bar plot so that it shows these counts.
 
 ```{r}
-ggplot(hair, aes(Hair, n)) +
-  geom_bar()
+ggplot(hair, aes(Hair, n, col = Hair, fill = Hair)) +
+  geom_col() +
+  theme_bw() +
+  ylab("Number of People") +
+  xlab("Hair Color")
 ```
 
 ## Exercise 7: Tiling
@@ -207,7 +229,7 @@ _Hint:_ What's the title of this exercise?
 
 ```{r}
 ggplot(hair_eye, aes(Hair, Eye)) +
-  geom_point(aes(colour = n))
+  geom_bin2d(aes(fill = n))
 ```
 
 By the way, `geom_count()` is like `geom_bar()`: it counts the number of overlapping points.
