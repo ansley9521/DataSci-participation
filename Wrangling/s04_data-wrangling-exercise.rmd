@@ -36,7 +36,7 @@ Hint: You can add the `suppressPackageStartupMessages()` function around the
 library(gapminder)
 library(tidyverse)
 gapminder
-mtcars %>% rownames_to_column() %>% as.tibble()
+#mtcars %>% rownames_to_column() %>% as.tibble()
 #This allows you to have row names if you want. Default for tibble is no row names
 ```
 
