@@ -1,5 +1,7 @@
 # DataSci-participation
 
+I will also be using a [homework](https://github.com/USF-Psych-DataSci-2020/DataSci-hw-ansley9521) repository. 
+
 Participation For Day | Link
 ----------------|-------------
 1/16-23/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Day%201)
