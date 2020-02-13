@@ -270,6 +270,7 @@ remotes::install_github("tidyverse/dplyr")
 ```
 
 ```{r, eval = FALSE}
+remotes::install_github("tidyverse/dplyr")
 psych::bfi %>% 
   as_tibble() %>% 
   select(A1:A5) %>% 
@@ -279,13 +280,19 @@ psych::bfi %>%
 
 3. Let's use `psych::bfi` and make a new data frame that has
    (1) each participant's educational level (convert it to a categorical variable
-   using `factor*()`) and the mean score for each of the Big Five scales for each 
+   using `factor()`) and the mean score for each of the Big Five scales for each 
    participant. Store this data frame as a new object.
    
 ```{r}
-FILL_THIS_IN <-
+psychbfi_edu <-
   psych::bfi %>% 
-  FILL_THIS_IN(FILL_THIS_IN)
+  mutate(education = factor(education)) %>% 
+  rowwise() %>% 
+  mutate(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C_mean = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N_mean = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O_mean = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E_mean = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE))
 ```
 
 4. Use the data from Task 3 to summarize the distributions of Big Five scores 
@@ -293,9 +300,29 @@ FILL_THIS_IN <-
    each score in each group). Also report the sample size within each group.
    
 ```{r}
-FILL_THIS_IN %>% 
-  FILL_THIS_IN(FILL_THIS_IN) %>% 
-  FILL_THIS_IN(FILL_THIS_IN)
+psychbfi_edu %>% 
+  group_by(education) %>% 
+  summarise(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C_mean = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N_mean = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O_mean = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E_mean = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE),
+        A_sd = sd(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C_sd = sd(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N_sd = round(sd(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O_sd = sd(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E_sd = sd(c(E1, E2, E3, E4, E5), na.rm = TRUE),
+        A_min = min(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C_min = min(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N_min = round(min(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O_min = min(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E_min = min(c(E1, E2, E3, E4, E5), na.rm = TRUE),
+        A_max = max(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C_max = max(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N_max = round(max(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O_max = max(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E_max = max(c(E1, E2, E3, E4, E5), na.rm = TRUE),
+            n = length(education))
 ```  
 
 
