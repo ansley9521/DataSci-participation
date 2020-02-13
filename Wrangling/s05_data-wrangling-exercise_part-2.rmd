@@ -146,6 +146,52 @@ Let's head back to the guide at the section on `summarize()`.
 
 # Exercises for grouped data frames
 
+```{r}
+#Notes from second half of class
+
+#Summarize breaks down a variable into one value (e.g. mean)
+#Package, Table1 or Table One?
+
+starwars %>%
+  summarise_if(is.numeric, mean, na.rm = TRUE)
+
+gapminder %>% 
+  group_by(continent, year) #remember, group_by does not arrange them differently
+
+gapminder %>% 
+  group_by(continent, year) %>% 
+  summarize(mu = mean(lifeExp),
+            sigma = sd(lifeExp))
+#You could use this to show mean (sd) for experimental and control group (e.g. group_by condition)
+
+gapminder %>% 
+  group_by(smallLifeExp = lifeExp < 60) #can create a new variable by which to group
+
+gapminder %>% 
+  group_by(country) %>% 
+  summarize(n=n())
+
+gapminder %>% 
+  group_by(continent) %>% 
+  summarize(n_countries = n_distinct(country)) #could also do = length(unique(country))
+#This tells us number of countries within continents
+
+gapminder %>% 
+  group_by(continent) %>% 
+  summarize(n_countries = n_distinct(country), mean_LifeExp = mean(lifeExp))
+
+gap_inc <- gapminder %>% 
+  arrange(year) %>% 
+  group_by(country) %>% 
+  mutate(gdpPercap_inc = round(gdpPercap - lag(gdpPercap), 2)) %>% 
+  arrange(country)
+#lag basically means the previous one. So gdpPercap minus the previous gdpPercap
+
+gap_inc %>% 
+  tidyr::drop_na()
+```
+
+
 Let's do some practice with grouping (and ungrouping) and summarizing data frames!
 
 1. (a) What's the minimum life expectancy for each continent and each year? 
@@ -154,8 +200,11 @@ Let's do some practice with grouping (and ungrouping) and summarizing data frame
 
 ```{r}
 gapminder %>% 
-  group_by(FILL_THIS_IN) %>% 
-  FILL_THIS_IN(min_life = min(lifeExp))
+  group_by(continent, year) %>% 
+  summarize(min_life = min(lifeExp)) %>%  #not mutate() because it would be same length (not one value across each group of contintent/year). Not fully understanding this...
+  select(continent, country, year, min_life) %>% 
+  arrange(min_life)
+
 ```
 
 
@@ -164,10 +213,12 @@ in the `psych::bfi` dataset. Be sure to handle `NA`!
 
 ```{r}
 psych::bfi %>%
+  rownames_to_column(var = "ID") %>% 
   as_tibble() %>% 
   select(A1:A5) %>% 
-  rowwise() %>% 
-  mutate(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE)) %>% 
+  rowwise() %>% #each row is its own group (e.g. with participants)
+  mutate(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE)) %>% #could use to produce mean score for each participant on items for a measure
+  #the na.rm allows you to compute the mean even for individuals with missing data, etc.
   ungroup()
 ```
 
@@ -175,6 +226,15 @@ Now compute mean scores for Conscientiousness, as well as `sd` and `min` scores
 for reach person.
 
 ```{r}
+psych::bfi %>%
+  rownames_to_column(var = "ID") %>% 
+  as_tibble() %>% 
+  select(C1:C5) %>% 
+  rowwise() %>% #each row is its own group (e.g. with participants)
+  mutate(C_mean = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+          C_sd = sd(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+          C_min = min(c(C1,C2, C3, C4, C5), na.rm = TRUE))
+  ungroup()
 
 ```
 
@@ -185,7 +245,7 @@ For example, `pmin()` computes the "parallel min" across the vectors it receives
 psych::bfi %>% 
   as_tibble() %>% 
   select(A1:A5) %>% 
-  mutate(A_min = pmin(A1, A2, A3, A4, A5))
+  mutate(A_min = pmin(A1, A2, A3, A4, A5)) #pmin, not min
 ```
 
 **There are a few other ways to do this sort of computation.**
