@@ -20,6 +20,50 @@ email <- read_csv("https://raw.githubusercontent.com/USF-Psych-DataSci/Classroom
 knitr::opts_chunk$set(error = TRUE, warning = FALSE)
 ```
 
+# From Class:
+
+## Pivot Longer
+
+```{r}
+#Making data untidy
+haireye_untidy <- hair_eye %>% 
+  mutate(eye = str_c(Eye, "_eyed")) %>% 
+  pivot_wider(id_cols = Hair, names_from = eye, values_from = n)
+
+haireye_untidy
+
+#Making data tidy
+haireye_untidy %>% 
+  pivot_longer(cols = c(Blue_eyed, Brown_eyed, Green_eyed, Hazel_eyed),
+               names_to = "eye",
+               values_to = "n")
+
+#An easier way to do this (especially with greater variables)
+haireye_untidy %>% 
+  pivot_longer(cols = contains("eyed"), #We know that all columns we want to turn into a single column have "eyed" in their names. 
+               names_to  = "eye",
+               values_to = "n")
+
+#Or could do every column except for hair
+haireye_untidy %>% 
+  pivot_longer(cols = -Hair,
+               names_to  = "eye",
+               values_to = "n")
+
+```
+
+## Pivot Wider
+
+```{r}
+
+hair_eye %>% 
+  pivot_wider(id_cols = Hair, #What are the "ID" columns
+              names_from = Eye, 
+              values_from = n)
+
+```
+
+
 
 ## Exercise 1: Univariate Pivoting
 
@@ -31,24 +75,26 @@ lotr
 
 1. Would you say this data is in tidy format?
 
+*Yes, this data is tidy because each row is a single observation, each column is a unique variable, and each cell is a value.*
+
    <!-- Describe why or why not in this space. -->
 
 2. Widen the data so that we see the words spoken by each race, by putting race as its own column.
 
 ```{r}
-(lotr_wide <- lotr %>% 
-  pivot_wider(FILL_THIS_IN = c(-Race, -Words), 
-              FILL_THIS_IN = Race, 
-              FILL_THIS_IN = Words))
+lotr_wide <- lotr %>% 
+  pivot_wider(id_cols = c(-Race, -Words), 
+              names_from = Race, 
+              values_from = Words)
 ```
 
 3. Re-lengthen the wide LOTR data from Question 2 above.
 
 ```{r}
 lotr_wide %>% 
-  pivot_longer(FILL_THIS_IN = FILL_THIS_IN, 
-               names_to  = FILL_THIS_IN, 
-               values_to = FILL_THIS_IN)
+  pivot_longer(cols = c(Elf, Hobbit, Man), 
+               names_to  = "Race", 
+               values_to = "Words")
 ```
 
 
@@ -67,10 +113,14 @@ guest %>%
 1. Put "meal" and "attendance" as their own columns, with the events living in a new column.
 
 ```{r}
-(guest_long <- guest %>% 
-  pivot_longer(cols      = FILL_THIS_IN, 
-               names_to  = FILL_THIS_IN,
-               FILL_THIS_IN))
+guest_long <- guest %>% 
+  pivot_longer(cols  = c(starts_with("attendance"), starts_with("meal")),
+               names_to  = c(".value", "event"),
+               names_sep = "_") #Column names must have a "separating" character
+
+#So after the "_" our columns (cols =) all had the "event" (either wedding, brunch, or golf). That's why the name of event comes *second*, (names_to) because the name of the event is after the _ in our column names. This creates a column named "event" with these values in it.
+#Before the _ our columns had Attendance or meal. So we left this as is. This created the two columns named "attendance" and "meal" with these values in them.
+#I don't get the values_to though.
 ```
 
 2. Use `tidyr::separate()` to split the name into two columns: "first" and 
@@ -78,14 +128,16 @@ guest %>%
 
 ```{r}
 guest_long %>% 
-  separate(FILL_THIS_IN, into = FILL_THIS_IN)
+  separate(name, into = c("First", "Last")) %>% 
+  unite(col = "name", First:Last, sep = " ")
   # unite(col = "name", FILL_THIS_IN, sep = FILL_THIS_IN)
+
 ```
 
 3. Which parties still have a "PENDING" status for all members and all events?
 
 ```{r}
-FILL_THIS_IN %>% 
+guest_long %>% 
   group_by(party) %>% 
   summarize(all_pending = all(attendance == "PENDING"))
 ```
@@ -93,9 +145,10 @@ FILL_THIS_IN %>%
 4. Which parties still have a "PENDING" status for all members for the wedding?
 
 ```{r}
-FILL_THIS_IN %>% 
+guest_long %>% 
   group_by(party) %>% 
-  summarize(pending_wedding = all(FILL_THIS_IN == "PENDING"))
+  filter(event == "wedding") %>% 
+  summarize(pending_wedding = all(attendance == "PENDING"))
 ```
 
 
@@ -103,10 +156,10 @@ FILL_THIS_IN %>%
 
 ```{r}
 guest_long %>% 
-  pivot_wider(id_cols     = FILL_THIS_IN, 
-              names_from  = FILL_THIS_IN, 
+  pivot_wider(id_cols = c("party", "name"), 
+              names_from  = event, 
               names_sep   = "_", 
-              values_from = FILL_THIS_IN)
+              values_from = "meal")
 ```
 
 6. You also have a list of emails for each party, in this worksheet under the 
