@@ -157,9 +157,8 @@ guest_long %>%
 ```{r}
 guest_long %>% 
   pivot_wider(id_cols = c("party", "name"), 
-              names_from  = event, 
-              names_sep   = "_", 
-              values_from = "meal")
+              names_from  = event,
+              values_from = c("attendance", "meal"))
 ```
 
 6. You also have a list of emails for each party, in this worksheet under the 
@@ -168,7 +167,7 @@ guest_long %>%
 
 ```{r}
 email %>% 
-  separate_rows(FILL_THIS_IN, sep = FILL_THIS_IN)
+  separate_rows(guest, sep = ",")
 ```
 
 
