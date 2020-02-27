@@ -7,6 +7,16 @@ output:
     theme: paper
 ---
 
+```{r}
+#install.packages("nycflights13")
+library(nycflights13)
+delay_data <- 
+  flights %>% #x
+  left_join(weather, by = "day") %>% #y and ID
+  left_join(airlines, by = "airline") #y and ID
+```
+
+
 ## Requirements
 
 You will need data from Joey Bernhardt's `singer` R package for this exercise. 
@@ -17,6 +27,12 @@ You can download the singer data from the `USF-Psych-DataSci/Classroom` repo:
 songs <- read_csv("https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/songs.csv")
 locations <- read_csv(https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/loc.csv")
 ```
+```{r}
+songs <- read.csv("https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/songs.csv")
+locations <- read.csv("https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/loc.csv")
+
+```
+
 
 If you want, you could instead install the `singer` package itself. To do that,
 you'll need to install `devtools`. Running this code in your console should do 
@@ -26,6 +42,12 @@ the trick:
 install.packages("devtools")
 devtools::install_github("JoeyBernhardt/singer")
 ```
+
+```{r}
+#install.packages("devtools")
+#devtools::install_github("JoeyBernhardt/singer")
+```
+
 
 Load required packages:
 
