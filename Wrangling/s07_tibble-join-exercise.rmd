@@ -192,17 +192,21 @@ with two toy tibbles named `y` and `z`, similar to Data Wrangling Cheatsheet
 1. Rows that appear in both `y` and `z`
 
 ```{r}
-union(y, z)
+intersect(y, z)
+
 ```
 
 2. You collected the data in `y` on Day 1, and `z` in Day 2. 
    Make a data set to reflect that.
 
 ```{r}
-bind_rows(
+union(
   mutate(y, day = "Day 1"),
   mutate(z, day = "Day 2")
-)
+) %>% 
+  pivot_wider(names_from = "day")
+
+#Could combine with pivot function to make wide format
 ```
 
 3. The rows contained in `z` are bad! Remove those rows from `y`.
