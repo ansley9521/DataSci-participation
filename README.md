@@ -6,7 +6,7 @@ Participation For Day | Link
 ----------------|-------------
 1/16-23/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Day%201)
 1/30/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Plotting)
-2/6-13/20 | [:cowboy_hat_face:](https://github.com/ansley9521/DataSci-participation/tree/master/Wrangling)
+2/6-13/20, 2/27/20 | [:cowboy_hat_face:](https://github.com/ansley9521/DataSci-participation/tree/master/Wrangling)
 2/20/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Tidy%20Data%20and%20Pivoting)
 
 
