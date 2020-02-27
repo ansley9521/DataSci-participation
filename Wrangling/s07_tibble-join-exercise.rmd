@@ -7,14 +7,7 @@ output:
     theme: paper
 ---
 
-```{r}
-#install.packages("nycflights13")
-library(nycflights13)
-delay_data <- 
-  flights %>% #x
-  left_join(weather, by = "day") %>% #y and ID
-  left_join(airlines, by = "airline") #y and ID
-```
+
 
 
 ## Requirements
@@ -214,3 +207,23 @@ union(
 ```{r}
 setdiff(y, z)
 ```
+
+
+```{r}
+#install.packages("nycflights13")
+library(nycflights13)
+
+#renaming
+airports.1 <- as_tibble(airports) %>% 
+   rename(origin = faa)
+
+#grouping
+a <- full_join(flights, weather, by = c("origin", "year", "month", "day", "hour"))
+b <- full_join(a, airlines, by = "carrier")
+c <- full_join(b, planes, by = c("tailnum", "year"))
+d <- full_join(c, airports.1, by = "origin") %>% 
+  select(carrier, flight, tailnum, origin, dest, everything()) %>% 
+  arrange(carrier, origin)
+
+```
+
