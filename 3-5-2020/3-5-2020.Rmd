@@ -1,0 +1,30 @@
+---
+title: "3-5-2020"
+author: "Ansley"
+date: "3/5/2020"
+output: 
+  html_document:
+    keep_md: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE}
+library(tidyverse)
+library(gapminder)
+#install.packages("here")
+library(here)
+```
+
+```{r}
+(gap_asia_2007 <- gapminder %>% filter(year == 2007, continent == "Asia"))
+write_csv(gap_asia_2007, "exported_file.csv")
+getwd()
+file.path("data", "cats_data.csv") #names of folders, file name. It puts these together and makes a correct string for whatever system the user is on (Mac or Windows, etc.).
+here::here()
+
+```
+
