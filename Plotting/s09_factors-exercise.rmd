@@ -155,21 +155,3 @@ c(df1$country, df2$country)
 fct_c(df1$country, df2$country)
 
 ```
-
-
-```{r}
-#Making an ugly graph:
-
-ggplot(airquality, aes(`Month`, `Temp`, group = `Month`)) +
-    geom_boxplot(outlier.shape = NA) +
-    geom_jitter(alpha = 0.3, aes(color = "red3")) +
-    ylim(0, 200) +
-  theme(panel.background = element_rect(fill = "yellowgreen")) +
-    labs(x = "",
-         y = "",
-         title="Maximum temperature by month") +
-    annotate("text", x = 4.08, y = 95, label="°F", size = 8) +
-    coord_cartesian(xlim = c(4.5, 9.5),
-                    clip = 'off') 
-   
-```

@@ -12,6 +12,51 @@ suppressPackageStartupMessages(library(tidyverse))
 library(gapminder)
 ```
 
+# Color Blind Friendly Palettes!
+```{r}
+# The palette with grey:
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# The palette with black:
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+# To use for fills, add
+  scale_fill_manual(values=cbPalette)
+
+# To use for line and point colors, add
+  scale_colour_manual(values=cbPalette)
+```
+
+# You can also choose your own colors!
+
+```{r}
+ggplot(df, aes(x=cond, y=yval, fill=cond)) + geom_bar(stat="identity") + 
+    scale_fill_manual(values=c("red", "blue", "green"))
+
+ggplot(df, aes(x=cond, y=yval, fill=cond)) + geom_bar(stat="identity") + 
+    scale_fill_manual(values=c("#CC6666", "#9999CC", "#66CC99"))
+
+# Note: use scale_colour_manual() for lines and points
+
+```
+
+# Making an ugly graph
+```{r}
+
+ggplot(airquality, aes(`Month`, `Temp`, group = `Month`)) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_jitter(alpha = 0.3, aes(color = "red3")) +
+    ylim(-200, 200) +
+  theme(panel.background = element_rect(fill = "yellowgreen")) +
+    labs(x = "",
+         y = "",
+         title="Maximum temperature by month") +
+    annotate("text", x = 4.08, y = 95, label="°F", size = 8) +
+    coord_cartesian(xlim = c(4.5, 9.5),
+                    clip = 'off') 
+
+```
+
 
 # Saving Graphs to File
 
@@ -20,10 +65,59 @@ library(gapminder)
     - Practice by saving the following plot to file: 
 
 ```{r}
-ggplot(mtcars, aes(hp, wt)) + 
-    geom_point()
-ggsave(FILENAME_HERE, PLOT_OBJECT_HERE)
+mtcars_plot <- ggplot(mtcars, aes(hp, wt)) + 
+    geom_point() 
+
+ggsave("mtcars_plot.pdf")
+ggsave("mtcars_plot.svg")
 ```
+
+```{r}
+?ggthemes()
+#install.packages("ggthemes")
+library(ggthemes)
+
+?theme()
+```
+
+# Plotting graphs next to each other!
+
+```{r}
+#install.packages("patchwork")
+library(patchwork)
+library(gridExtra)
+
+p_mpg <- ggplot(mtcars, aes(factor(cyl), mpg, color = factor(cyl))) + 
+    geom_boxplot() + theme_bw() + xlab("No. of cylinders") + ylab("MPG")
+
+p_hp <- ggplot(mtcars, aes(factor(cyl), hp, color = factor(cyl))) + 
+    geom_boxplot() + theme_bw() + xlab("No. of cylinders") + ylab("Horsepower")
+
+p_mpg + p_hp 
+
+
+```
+
+# Or on top!
+
+```{r}
+p_mpg / p_hp
+```
+
+# Or this... not sure what this does
+
+```{r}
+p_mpg + p_hp + plot_layout(guides = 'collect')
+
+```
+
+```{r}
+#remotes::install_github("wilkelab/ggtext")
+#remotes::install_github("tidyverse/ggplot2")
+#install.packages("ggstatsplot")
+library(ggstatsplot)
+```
+
 
 - Base R way: print plots "to screen", sandwiched between `pdf()`/`jpeg()`/`png()`... and `dev.off()`. 
 - Vector vs. raster: Images are stored on your computer as either _vector_ or _raster_.
@@ -52,9 +146,13 @@ p_scales +
     scale_x_log10() +
     scale_colour_continuous(
         trans  = "log10", 
-        breaks = FILL_IN_BREAKS
+        breaks = 10^(1:10)
     ) +
-    FILL_IN_SCALE_FUNCTION(breaks=FILL_IN_BREAKS)
+    scale_y_continuous(breaks = c(30, 40, 50, 60, 70, 80))
+
+?scale_colour_continuous()
+#install.packages("labeling")
+library(labeling)
 ```
 
 2. Specify `scales::*_format` in the `labels` argument of a scale function to do the following:
@@ -64,11 +162,11 @@ p_scales +
 ```{r}
 library(scales)
 p_scales +
-    scale_x_log10(labels=FILL_THIS_IN) +
+    scale_x_log10(labels=scales::dollar_format()) +
     scale_colour_continuous(
         trans  = "log10", 
         breaks = 10^(1:10),
-        labels = FILL_THIS_IN
+        labels = scales::comma_format()
     ) +
     scale_y_continuous(breaks=10*(1:10))
 ```
@@ -77,17 +175,22 @@ p_scales +
     - Notice the three different types of scales: sequential, diverging, and continuous.
 
 ```{r}
+
+#Can't get this to work...
+
 ## All palettes the come with RColorBrewer:
 RColorBrewer::display.brewer.all()
 p_scales +
     scale_x_log10(labels=dollar_format()) +
-    FILL_IN_WITH_RCOLORBREWER(
-        trans   = "log10",
+    scale_fill_brewer(
+      palette = "Set3",
+      trans = "log10", 
         breaks  = 10^(1:10),
-        labels  = comma_format(),
-        palette = FILL_THIS_IN
+        labels  = comma_format()
     ) +
-    scale_y_continuous(breaks=10*(1:10))
+    scale_y_continuous(breaks = 10*(1:10))
+
+?scale_color_brewer()
 ```
 
 4. Use `viridis` to change the colour to a colour-blind friendly scheme
@@ -97,13 +200,14 @@ p_scales +
 ```{r}
 p_scales +
     scale_x_log10(labels=dollar_format()) +
-    FILL_IN_WITH_RCOLORBREWER(
+    scale_colour_viridis_c(
+        option = "D",
         trans   = "log10",
         breaks  = 10^(1:10),
         labels  = comma_format(),
-        palette = FILL_THIS_IN
     ) +
     scale_y_continuous(breaks=10*(1:10))
+?scale_colour_viridis_c()
 ```
 
 # Theming
@@ -120,7 +224,8 @@ ggplot(iris, aes(Sepal.Width, Sepal.Length)) +
      geom_point() +
      labs(x = "Sepal Width",
           y = "Sepal Length",
-          title = "Sepal sizes of three plant species")
+          title = "Sepal sizes of three plant species") +
+  theme_bw()
 ```
 
 2. Then, change font size of axis labels, and the strip background colour. Others?
@@ -133,8 +238,10 @@ ggplot(iris, aes(Sepal.Width, Sepal.Length)) +
           y = "Sepal Length",
           title = "Sepal sizes of three plant species") +
     theme_bw() +
-    theme(FILL_IN_ARG_FOR_AXIS_TITLE = FILL_THIS_IN,
-          strip.background = FILL_THIS_IN)
+    theme(axis.title = element_text(size = 20),
+          strip.background = element_rect(fill = "lavenderblush"))
+
+?theme()
 ```
 
 
