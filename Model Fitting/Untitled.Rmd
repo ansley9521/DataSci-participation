@@ -20,7 +20,9 @@ knitr::opts_chunk$set(error = TRUE)
 
 ```{r}
 #install.packages("broom")
+#install.packages("psychTools")
 
+library(psychTools)
 library(tidyverse)
 library(gapminder)
 library(broom)
@@ -217,45 +219,64 @@ anova(mod_europe, mod_europe_yrsq)
 ### Filtering/cleaning data
 
 ```{r}
-psychbfi_mean <-
+
+bfi <- psychTools::bfi
+keys <- replace_na(psychTools::bfi.dictionary$Keying, 1)
+
+psychbfi_mean <- bfi %>% mutate_at(names(bfi)[keys == -1], ~ 7 - .x) %>% 
+  mutate(A = rowMeans(select(., A1:A5), na.rm = TRUE),
+         C = rowMeans(select(., C1:C5), na.rm = TRUE),
+         E = rowMeans(select(., E1:E5), na.rm = TRUE),
+         N = rowMeans(select(., N1:N5), na.rm = TRUE),
+         O = rowMeans(select(., O1:O5), na.rm = TRUE),
+         gender = recode_factor(gender, `1` = "male", `2` = "female"),
+         education = recode_factor(education, `1` = "some hs", 
+                                              `2` = "hs", 
+                                              `3` = "some college", 
+                                              `4` = "college",
+                                              `5` = "graduate degree")) %>% 
+  select(gender:O)
+
+##What I had tried... 
+psychbfi_meanNA <-
   psych::bfi %>% 
   rownames_to_column(var = "ID") %>% 
   as_tibble() %>% 
   rowwise() %>% 
-  mutate(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
-        C_mean = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
-        N_mean = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
-        O_mean = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
-        E_mean = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE))
+  mutate(A = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE))
 
 
 ```
 
 ### Do men and women differ on the Big Five traits? How big are the differences?
 
-#### Yes, women are more agreeable (B = 0.21) and neurotic (B = 0.32) than men. NS difference for conscientiousness, extraversion, openness.
+#### Yes, women are more agreeable (B = 0.40), conscientious (B = 0.19), and extraverted (B = 0.24) than men. They are also less open (B = -0.10) and neurotic (B = -0.32) than men.
 
 ```{r}
 #Agreeableness
-pbfi_gender_A <- lm(A_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_A <- lm(A ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_A)
 augment(pbfi_gender_A, data = psychbfi_mean)
 tidy(pbfi_gender_A, conf.int = TRUE)
 
 #Conscientiousness
-pbfi_gender_C <- lm(C_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_C <- lm(C ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_C)
 
 #Extraversion
-pbfi_gender_E <- lm(E_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_E <- lm(E ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_E)
 
 #Openness
-pbfi_gender_O <- lm(O_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_O <- lm(O ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_O)
 
 #Neuroticism
-pbfi_gender_N <- lm(N_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_N <- lm(N ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_N)
 
 ```
@@ -264,24 +285,44 @@ summary(pbfi_gender_N)
 ```{r}
 psychbfi_mean %>% 
   group_by(gender) %>% 
-  summarize(meanA = mean(A_mean))
+  summarize(meanA = mean(A))
 
 psychbfi_mean %>% 
   group_by(gender) %>% 
-  summarize(meanN = mean(N_mean))
+  summarize(meanN = mean(N))
 
-# For some reason the graphs are showing "6" as the value of A and N for both M and F.
+# For some reason the graphs are showing "6" as the value for both M and F.
 
 psychbfi_mean %>% 
-  ggplot(aes(gender, A_mean)) +
+  ggplot(aes(gender, A)) +
   geom_col(position = "dodge") +
-  scale_x_continuous(breaks = c(1,2)) +
   theme_bw() +
   xlab("Gender")+
   ylab("Agreeableness") 
 
 psychbfi_mean %>% 
-  ggplot(aes(gender, N_mean)) +
+  ggplot(aes(gender, C)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Conscientiousness") 
+
+psychbfi_mean %>% 
+  ggplot(aes(gender, E)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Extraversion") 
+
+psychbfi_mean %>% 
+  ggplot(aes(gender, O)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Openness") 
+
+psychbfi_mean %>% 
+  ggplot(aes(gender, N)) +
   geom_col(position = "dodge") +
   scale_x_continuous(breaks = c(1,2)) +
   theme_bw() +
@@ -293,43 +334,43 @@ psychbfi_mean %>%
 
 ### Do the Big Five traits increase or decrease with Age? Is there a linear or squared trend?
 
-#### Agreeableness increases with age and there seems to be support for a squared trend. Conscientiousness appears to decrease over age, linear trend. Extraversion may decrease over age, squared trend. No effect for age on openness. Neuroticism seems to decrease with age, linear trend.
+#### Agreeableness increases with age and there seems to be support for a squared trend. Conscientiousness appears to increase with age, squared trend. Extraversion may increase with age, squared trend. Openness appears to increase with age, linear trend. Neuroticism seems to increase with age, linear trend.
 
 ```{r}
 describe(psychbfi_mean$age) #min = 3
 
 #Agreeableness
-pbfi_age_A <- lm(A_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_A <- lm(A ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_A)
-pbfi_age_A_sq <- lm(A_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_A_sq <- lm(A ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_A_sq)
 anova(pbfi_age_A, pbfi_age_A_sq)
 
 #Conscientiousness
-pbfi_age_C <- lm(C_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_C <- lm(C ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_C)
-pbfi_age_C_sq <- lm(C_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_C_sq <- lm(C ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_C_sq)
 anova(pbfi_age_C, pbfi_age_C_sq)
 
 #Extraversion
-pbfi_age_E <- lm(E_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_E <- lm(E ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_E)
-pbfi_age_E_sq <- lm(E_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_E_sq <- lm(E ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_E_sq)
 anova(pbfi_age_E, pbfi_age_E_sq)
 
 #Openness
-pbfi_age_O <- lm(O_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_O <- lm(O ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_O)
-pbfi_age_O_sq <- lm(O_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_O_sq <- lm(O ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_O_sq)
 anova(pbfi_age_O, pbfi_age_O_sq)
 
 #Neuroticism
-pbfi_age_N <- lm(N_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_N <- lm(N ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_N)
-pbfi_age_N_sq <- lm(N_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_N_sq <- lm(N ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_N_sq)
 anova(pbfi_age_N, pbfi_age_N_sq)
 
@@ -340,7 +381,7 @@ anova(pbfi_age_N, pbfi_age_N_sq)
 
 ```{r}
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = A_mean)) +
+  ggplot(aes(x = age, y = A)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -348,7 +389,7 @@ psychbfi_mean %>%
   ylab("Agreeableness")
 
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = C_mean)) +
+  ggplot(aes(x = age, y = C)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -356,7 +397,7 @@ psychbfi_mean %>%
   ylab("Conscientiousness")
 
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = E_mean)) +
+  ggplot(aes(x = age, y = E)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -364,7 +405,15 @@ psychbfi_mean %>%
   ylab("Extraversion")
 
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = N_mean)) +
+  ggplot(aes(x = age, y = O)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Openness")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = age, y = N)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -375,27 +424,27 @@ psychbfi_mean %>%
 
 ### Do the Big Five traits differ across educational levels? Treat education as a categorical variable.
 
-#### Yes, agreeableness and neuroticism decrease with education.
+#### Yes, for agreeableness, conscientiousness, extraversion, and openness, not neuroticism.
 
 ```{r}
 #Agreeableness
-pbfi_edu_A <- lm(A_mean ~ education, data = psychbfi_mean)
+pbfi_edu_A <- lm(A ~ education, data = psychbfi_mean)
 summary(pbfi_edu_A)
 
 #Conscientiousness
-pbfi_edu_C <- lm(C_mean ~ education, data = psychbfi_mean)
+pbfi_edu_C <- lm(C ~ education, data = psychbfi_mean)
 summary(pbfi_edu_C)
 
 #Extraversion
-pbfi_edu_E <- lm(E_mean ~ education, data = psychbfi_mean)
+pbfi_edu_E <- lm(E ~ education, data = psychbfi_mean)
 summary(pbfi_edu_E)
 
 #Openness
-pbfi_edu_O <- lm(O_mean ~ education, data = psychbfi_mean)
+pbfi_edu_O <- lm(O ~ education, data = psychbfi_mean)
 summary(pbfi_edu_O)
 
 #Neuroticism
-pbfi_edu_N <- lm(N_mean ~ education, data = psychbfi_mean)
+pbfi_edu_N <- lm(N ~ education, data = psychbfi_mean)
 summary(pbfi_edu_N)
 
 ```
@@ -404,44 +453,58 @@ summary(pbfi_edu_N)
 
 ```{r}
 psychbfi_mean %>% 
-  ggplot(aes(x = education, y = A_mean)) +
+  ggplot(aes(x = education, y = A)) +
   geom_col(position = "dodge") +
   theme_minimal() +
   xlab("Education") +
   ylab("Agreeableness")
 
 psychbfi_mean %>% 
-  ggplot(aes(x = education, y = N_mean)) +
+  ggplot(aes(x = education, y = C)) +
   geom_col(position = "dodge") +
   theme_minimal() +
   xlab("Education") +
-  ylab("Neuroticism")
+  ylab("Conscientiousness")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = education, y = E)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  xlab("Education") +
+  ylab("Extraversion")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = education, y = O)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  xlab("Education") +
+  ylab("Openness")
 ```
 
 ### How well do age and gender together predict the Big Five traits?
 
-#### A: AR2 = 0.03, C: AR2 = 0.00, E: AR2 = 0.00, O: AR2 = 0.00, N: AR2 = 0.03
+#### A: AR2 = 0.07, C: AR2 = 0.02, E: AR2 = 0.01, O: AR2 = 0.01, N: AR2 = 0.03
 
 ```{r}
 
 #Agreeableness
-pbfi_a_g_A <- lm(A_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_A <- lm(A ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_A)
 
 #Conscientiousness
-pbfi_a_g_C <- lm(C_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_C <- lm(C ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_C)
 
 #Extraversion
-pbfi_a_g_E <- lm(E_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_E <- lm(E ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_E)
 
 #Openness
-pbfi_a_g_O <- lm(O_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_O <- lm(O ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_O)
 
 #Neuroticism
-pbfi_a_g_N <- lm(N_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_N <- lm(N ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_N)
 
 ```

@@ -17,7 +17,9 @@ output:
 
 ```r
 #install.packages("broom")
+#install.packages("psychTools")
 
+library(psychTools)
 library(tidyverse)
 ```
 
@@ -1263,48 +1265,66 @@ anova(mod_europe, mod_europe_yrsq)
 
 
 ```r
-psychbfi_mean <-
+bfi <- psychTools::bfi
+keys <- replace_na(psychTools::bfi.dictionary$Keying, 1)
+
+psychbfi_mean <- bfi %>% mutate_at(names(bfi)[keys == -1], ~ 7 - .x) %>% 
+  mutate(A = rowMeans(select(., A1:A5), na.rm = TRUE),
+         C = rowMeans(select(., C1:C5), na.rm = TRUE),
+         E = rowMeans(select(., E1:E5), na.rm = TRUE),
+         N = rowMeans(select(., N1:N5), na.rm = TRUE),
+         O = rowMeans(select(., O1:O5), na.rm = TRUE),
+         gender = recode_factor(gender, `1` = "male", `2` = "female"),
+         education = recode_factor(education, `1` = "some hs", 
+                                              `2` = "hs", 
+                                              `3` = "some college", 
+                                              `4` = "college",
+                                              `5` = "graduate degree")) %>% 
+  select(gender:O)
+
+##What I had tried... 
+psychbfi_meanNA <-
   psych::bfi %>% 
   rownames_to_column(var = "ID") %>% 
   as_tibble() %>% 
   rowwise() %>% 
-  mutate(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
-        C_mean = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
-        N_mean = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
-        O_mean = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
-        E_mean = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE))
+  mutate(A = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE))
 ```
 
 ### Do men and women differ on the Big Five traits? How big are the differences?
 
-#### Yes, women are more agreeable (B = 0.21) and neurotic (B = 0.32) than men. NS difference for conscientiousness, extraversion, openness.
+#### Yes, women are more agreeable (B = 0.40), conscientious (B = 0.19), and extraverted (B = 0.24) than men. They are also less open (B = -0.10) and neurotic (B = -0.32) than men.
 
 
 ```r
 #Agreeableness
-pbfi_gender_A <- lm(A_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_A <- lm(A ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_A)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = A_mean ~ I(gender - 1), data = psychbfi_mean)
+## lm(formula = A ~ gender, data = psychbfi_mean)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -3.0855 -0.4759  0.1145  0.5145  1.9241 
+## -3.7823 -0.5823  0.2145  0.6177  1.6145 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)    4.07590    0.02409 169.175  < 2e-16 ***
-## I(gender - 1)  0.20964    0.02939   7.132 1.26e-12 ***
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   4.38555    0.02900  151.25   <2e-16 ***
+## genderfemale  0.39678    0.03538   11.22   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.7304 on 2798 degrees of freedom
-## Multiple R-squared:  0.01785,	Adjusted R-squared:  0.0175 
-## F-statistic: 50.86 on 1 and 2798 DF,  p-value: 1.255e-12
+## Residual standard error: 0.879 on 2798 degrees of freedom
+## Multiple R-squared:  0.04302,	Adjusted R-squared:  0.04268 
+## F-statistic: 125.8 on 1 and 2798 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -1312,24 +1332,20 @@ augment(pbfi_gender_A, data = psychbfi_mean)
 ```
 
 ```
-## # A tibble: 2,800 x 41
-##    ID       A1    A2    A3    A4    A5    C1    C2    C3    C4    C5    E1    E2
-##    <chr> <int> <int> <int> <int> <int> <int> <int> <int> <int> <int> <int> <int>
-##  1 61617     2     4     3     4     4     2     3     3     4     4     3     3
-##  2 61618     2     4     5     2     5     5     4     4     3     4     1     1
-##  3 61620     5     4     5     4     4     4     5     4     2     5     2     4
-##  4 61621     4     4     6     5     5     4     4     3     5     5     5     3
-##  5 61622     2     3     3     4     5     4     4     5     3     2     2     2
-##  6 61623     6     6     5     6     5     6     6     6     1     3     2     1
-##  7 61624     2     5     5     3     5     5     4     4     2     3     4     3
-##  8 61629     4     3     1     5     1     3     2     4     2     4     3     6
-##  9 61630     4     3     6     3     3     6     6     3     4     5     5     3
-## 10 61633     2     5     6     6     5     6     5     6     2     1     2     2
-## # … with 2,790 more rows, and 28 more variables: E3 <int>, E4 <int>, E5 <int>,
-## #   N1 <int>, N2 <int>, N3 <int>, N4 <int>, N5 <int>, O1 <int>, O2 <int>,
-## #   O3 <int>, O4 <int>, O5 <int>, gender <int>, education <int>, age <int>,
-## #   A_mean <dbl>, C_mean <dbl>, N_mean <dbl>, O_mean <dbl>, E_mean <dbl>,
-## #   .fitted <dbl>, .se.fit <dbl>, .resid <dbl>, .hat <dbl>, .sigma <dbl>,
+## # A tibble: 2,800 x 15
+##    gender education   age     A     C     E     N     O .fitted .se.fit .resid
+##    <fct>  <fct>     <int> <dbl> <dbl> <dbl> <dbl> <dbl>   <dbl>   <dbl>  <dbl>
+##  1 male   <NA>         16   4     2.8  3.8    4.2   3      4.39  0.0290 -0.386
+##  2 female <NA>         18   4.2   4    5      3.2   4      4.78  0.0203 -0.582
+##  3 female <NA>         17   3.8   4    4.2    3.4   4.8    4.78  0.0203 -0.982
+##  4 female <NA>         17   4.6   3    3.6    4.2   3.2    4.78  0.0203 -0.182
+##  5 male   <NA>         17   4     4.4  4.8    3.8   3.6    4.39  0.0290 -0.386
+##  6 female some col…    21   4.6   5.6  5.6    4     5      4.78  0.0203 -0.182
+##  7 male   <NA>         18   4.6   4.4  4.2    5.6   5.4    4.39  0.0290  0.214
+##  8 male   hs           19   2.6   3.4  2.4    2.8   4.2    4.39  0.0290 -1.79 
+##  9 male   some hs      19   3.6   4    3.25   3.4   5      4.39  0.0290 -0.786
+## 10 female <NA>         17   5.4   5.6  4.8    2.8   5.2    4.78  0.0203  0.618
+## # … with 2,790 more rows, and 4 more variables: .hat <dbl>, .sigma <dbl>,
 ## #   .cooksd <dbl>, .std.resid <dbl>
 ```
 
@@ -1339,118 +1355,118 @@ tidy(pbfi_gender_A, conf.int = TRUE)
 
 ```
 ## # A tibble: 2 x 7
-##   term          estimate std.error statistic  p.value conf.low conf.high
-##   <chr>            <dbl>     <dbl>     <dbl>    <dbl>    <dbl>     <dbl>
-## 1 (Intercept)      4.08     0.0241    169.   0.          4.03      4.12 
-## 2 I(gender - 1)    0.210    0.0294      7.13 1.26e-12    0.152     0.267
+##   term         estimate std.error statistic  p.value conf.low conf.high
+##   <chr>           <dbl>     <dbl>     <dbl>    <dbl>    <dbl>     <dbl>
+## 1 (Intercept)     4.39     0.0290     151.  0.          4.33      4.44 
+## 2 genderfemale    0.397    0.0354      11.2 1.38e-28    0.327     0.466
 ```
 
 ```r
 #Conscientiousness
-pbfi_gender_C <- lm(C_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_C <- lm(C ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_C)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = C_mean ~ I(gender - 1), data = psychbfi_mean)
+## lm(formula = C ~ gender, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.83310 -0.39053  0.00947  0.36690  2.20947 
+##    Min     1Q Median     3Q    Max 
+## -3.328 -0.728  0.072  0.672  1.862 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)    3.83310    0.01861 205.971   <2e-16 ***
-## I(gender - 1) -0.04257    0.02271  -1.875   0.0609 .  
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   4.13828    0.03125 132.426  < 2e-16 ***
+## genderfemale  0.18971    0.03813   4.976 6.89e-07 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5642 on 2798 degrees of freedom
-## Multiple R-squared:  0.001255,	Adjusted R-squared:  0.0008978 
-## F-statistic: 3.515 on 1 and 2798 DF,  p-value: 0.06092
+## Residual standard error: 0.9473 on 2798 degrees of freedom
+## Multiple R-squared:  0.008771,	Adjusted R-squared:  0.008417 
+## F-statistic: 24.76 on 1 and 2798 DF,  p-value: 6.888e-07
 ```
 
 ```r
 #Extraversion
-pbfi_gender_E <- lm(E_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_E <- lm(E ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_E)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = E_mean ~ I(gender - 1), data = psychbfi_mean)
+## lm(formula = E ~ gender, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.80103 -0.38706  0.01294  0.39897  2.01294 
+##     Min      1Q  Median      3Q     Max 
+## -3.2231 -0.6231  0.0269  0.7769  2.0146 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)    3.80103    0.01792 212.153   <2e-16 ***
-## I(gender - 1) -0.01397    0.02186  -0.639    0.523    
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   3.98542    0.03481 114.497  < 2e-16 ***
+## genderfemale  0.23767    0.04247   5.596  2.4e-08 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5431 on 2798 degrees of freedom
-## Multiple R-squared:  0.000146,	Adjusted R-squared:  -0.0002114 
-## F-statistic: 0.4084 on 1 and 2798 DF,  p-value: 0.5228
+## Residual standard error: 1.055 on 2798 degrees of freedom
+## Multiple R-squared:  0.01107,	Adjusted R-squared:  0.01072 
+## F-statistic: 31.32 on 1 and 2798 DF,  p-value: 2.4e-08
 ```
 
 ```r
 #Openness
-pbfi_gender_O <- lm(O_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_O <- lm(O ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_O)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = O_mean ~ I(gender - 1), data = psychbfi_mean)
+## lm(formula = O ~ gender, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.89418 -0.29418 -0.05485  0.34515  2.14515 
+##     Min      1Q  Median      3Q     Max 
+## -3.4545 -0.5535  0.0465  0.6465  1.4465 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)    3.89418    0.01852 210.286   <2e-16 ***
-## I(gender - 1) -0.03933    0.02259  -1.741   0.0818 .  
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   4.65452    0.02662  174.82  < 2e-16 ***
+## genderfemale -0.10102    0.03248   -3.11  0.00189 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5614 on 2798 degrees of freedom
-## Multiple R-squared:  0.001082,	Adjusted R-squared:  0.0007249 
-## F-statistic:  3.03 on 1 and 2798 DF,  p-value: 0.08183
+## Residual standard error: 0.8071 on 2798 degrees of freedom
+## Multiple R-squared:  0.003445,	Adjusted R-squared:  0.003089 
+## F-statistic: 9.672 on 1 and 2798 DF,  p-value: 0.00189
 ```
 
 ```r
 #Neuroticism
-pbfi_gender_N <- lm(N_mean ~ I(gender - 1), data = psychbfi_mean)
+pbfi_gender_N <- lm(N ~ gender, data = psychbfi_mean)
 summary(pbfi_gender_N)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = N_mean ~ I(gender - 1), data = psychbfi_mean)
+## lm(formula = N ~ gender, data = psychbfi_mean)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.26583 -0.95029 -0.06583  0.84971  3.04971 
+## -3.04971 -0.84971  0.06583  0.95029  2.26583 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)    2.95029    0.03917  75.327  < 2e-16 ***
-## I(gender - 1)  0.31554    0.04779   6.603  4.8e-11 ***
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   4.04971    0.03917 103.398  < 2e-16 ***
+## genderfemale -0.31554    0.04779  -6.603 4.79e-11 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Residual standard error: 1.187 on 2798 degrees of freedom
 ## Multiple R-squared:  0.01534,	Adjusted R-squared:  0.01499 
-## F-statistic:  43.6 on 1 and 2798 DF,  p-value: 4.797e-11
+## F-statistic:  43.6 on 1 and 2798 DF,  p-value: 4.794e-11
 ```
 
 #### Graphing
@@ -1458,46 +1474,37 @@ summary(pbfi_gender_N)
 ```r
 psychbfi_mean %>% 
   group_by(gender) %>% 
-  summarize(meanA = mean(A_mean))
-```
-
-```
-## Warning: Grouping rowwise data frame strips rowwise nature
+  summarize(meanA = mean(A))
 ```
 
 ```
 ## # A tibble: 2 x 2
 ##   gender meanA
-##    <int> <dbl>
-## 1      1  4.08
-## 2      2  4.29
+##   <fct>  <dbl>
+## 1 male    4.39
+## 2 female  4.78
 ```
 
 ```r
 psychbfi_mean %>% 
   group_by(gender) %>% 
-  summarize(meanN = mean(N_mean))
-```
-
-```
-## Warning: Grouping rowwise data frame strips rowwise nature
+  summarize(meanN = mean(N))
 ```
 
 ```
 ## # A tibble: 2 x 2
 ##   gender meanN
-##    <int> <dbl>
-## 1      1  2.95
-## 2      2  3.27
+##   <fct>  <dbl>
+## 1 male    4.05
+## 2 female  3.73
 ```
 
 ```r
-# For some reason the graphs are showing "6" as the value of A and N for both M and F.
+# For some reason the graphs are showing "6" as the value for both M and F.
 
 psychbfi_mean %>% 
-  ggplot(aes(gender, A_mean)) +
+  ggplot(aes(gender, A)) +
   geom_col(position = "dodge") +
-  scale_x_continuous(breaks = c(1,2)) +
   theme_bw() +
   xlab("Gender")+
   ylab("Agreeableness") 
@@ -1507,7 +1514,40 @@ psychbfi_mean %>%
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(gender, N_mean)) +
+  ggplot(aes(gender, C)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Conscientiousness") 
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+
+```r
+psychbfi_mean %>% 
+  ggplot(aes(gender, E)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Extraversion") 
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-22-3.png)<!-- -->
+
+```r
+psychbfi_mean %>% 
+  ggplot(aes(gender, O)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Openness") 
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-22-4.png)<!-- -->
+
+```r
+psychbfi_mean %>% 
+  ggplot(aes(gender, N)) +
   geom_col(position = "dodge") +
   scale_x_continuous(breaks = c(1,2)) +
   theme_bw() +
@@ -1515,11 +1555,15 @@ psychbfi_mean %>%
   ylab("Neuroticism") 
 ```
 
-![](Untitled_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+```
+## Error: Discrete value supplied to continuous scale
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-22-5.png)<!-- -->
 
 ### Do the Big Five traits increase or decrease with Age? Is there a linear or squared trend?
 
-#### Agreeableness increases with age and there seems to be support for a squared trend. Conscientiousness appears to decrease over age, linear trend. Extraversion may decrease over age, squared trend. No effect for age on openness. Neuroticism seems to decrease with age, linear trend.
+#### Agreeableness increases with age and there seems to be support for a squared trend. Conscientiousness appears to increase with age, squared trend. Extraversion may increase with age, squared trend. Openness appears to increase with age, linear trend. Neuroticism seems to increase with age, linear trend.
 
 
 ```r
@@ -1533,56 +1577,56 @@ describe(psychbfi_mean$age) #min = 3
 
 ```r
 #Agreeableness
-pbfi_age_A <- lm(A_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_A <- lm(A ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_A)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = A_mean ~ I(age - 3), data = psychbfi_mean)
+## lm(formula = A ~ I(age - 3), data = psychbfi_mean)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -3.1771 -0.4256  0.0708  0.5133  1.8571 
+## -3.7153 -0.5206  0.1244  0.6645  1.6142 
 ## 
 ## Coefficients:
 ##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 4.040139   0.034964 115.552  < 2e-16 ***
-## I(age - 3)  0.006849   0.001245   5.501 4.12e-08 ***
+## (Intercept)  4.26595    0.04212 101.291   <2e-16 ***
+## I(age - 3)   0.01498    0.00150   9.986   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.733 on 2798 degrees of freedom
-## Multiple R-squared:  0.0107,	Adjusted R-squared:  0.01035 
-## F-statistic: 30.26 on 1 and 2798 DF,  p-value: 4.12e-08
+## Residual standard error: 0.883 on 2798 degrees of freedom
+## Multiple R-squared:  0.03441,	Adjusted R-squared:  0.03407 
+## F-statistic: 99.72 on 1 and 2798 DF,  p-value: < 2.2e-16
 ```
 
 ```r
-pbfi_age_A_sq <- lm(A_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_A_sq <- lm(A ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_A_sq)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = A_mean ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
+## lm(formula = A ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -3.1873 -0.4590  0.0838  0.5052  1.9052 
+## -3.7843 -0.5227  0.1296  0.6686  1.7913 
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)      3.692e+00  8.318e-02  44.384  < 2e-16 ***
-## I(age - 3)       3.311e-02  5.831e-03   5.678 1.51e-08 ***
-## I(I(age - 3)^2) -4.171e-04  9.049e-05  -4.609 4.24e-06 ***
+## (Intercept)      3.8918579  0.1002760  38.811  < 2e-16 ***
+## I(age - 3)       0.0431931  0.0070290   6.145 9.14e-10 ***
+## I(I(age - 3)^2) -0.0004482  0.0001091  -4.108 4.10e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.7304 on 2797 degrees of freedom
-## Multiple R-squared:  0.01815,	Adjusted R-squared:  0.01745 
-## F-statistic: 25.86 on 2 and 2797 DF,  p-value: 7.451e-12
+## Residual standard error: 0.8805 on 2797 degrees of freedom
+## Multiple R-squared:  0.04021,	Adjusted R-squared:  0.03952 
+## F-statistic: 58.58 on 2 and 2797 DF,  p-value: < 2.2e-16
 ```
 
 ```r
@@ -1592,67 +1636,67 @@ anova(pbfi_age_A, pbfi_age_A_sq)
 ```
 ## Analysis of Variance Table
 ## 
-## Model 1: A_mean ~ I(age - 3)
-## Model 2: A_mean ~ (I(age - 3)) + I(I(age - 3)^2)
+## Model 1: A ~ I(age - 3)
+## Model 2: A ~ (I(age - 3)) + I(I(age - 3)^2)
 ##   Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
-## 1   2798 1503.5                                  
-## 2   2797 1492.1  1     11.33 21.239 4.236e-06 ***
+## 1   2798 2181.4                                  
+## 2   2797 2168.3  1    13.084 16.878 4.101e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ```r
 #Conscientiousness
-pbfi_age_C <- lm(C_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_C <- lm(C ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_C)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = C_mean ~ I(age - 3), data = psychbfi_mean)
+## lm(formula = C ~ I(age - 3), data = psychbfi_mean)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -2.8404 -0.3949 -0.0040  0.3801  2.1801 
+## -3.3787 -0.6276  0.0530  0.6918  1.9033 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.8631609  0.0268990 143.617   <2e-16 ***
-## I(age - 3)  -0.0022753  0.0009579  -2.375   0.0176 *  
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 4.006027   0.045069  88.886  < 2e-16 ***
+## I(age - 3)  0.010073   0.001605   6.276 4.01e-10 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5639 on 2798 degrees of freedom
-## Multiple R-squared:  0.002012,	Adjusted R-squared:  0.001655 
-## F-statistic: 5.641 on 1 and 2798 DF,  p-value: 0.01761
+## Residual standard error: 0.9449 on 2798 degrees of freedom
+## Multiple R-squared:  0.01388,	Adjusted R-squared:  0.01353 
+## F-statistic: 39.39 on 1 and 2798 DF,  p-value: 4.013e-10
 ```
 
 ```r
-pbfi_age_C_sq <- lm(C_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_C_sq <- lm(C ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_C_sq)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = C_mean ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
+## lm(formula = C ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.82499 -0.40269 -0.01038  0.38004  2.18004 
+##     Min      1Q  Median      3Q     Max 
+## -3.4574 -0.6426  0.0561  0.6895  2.1216 
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)      3.821e+00  6.423e-02  59.486   <2e-16 ***
-## I(age - 3)       9.064e-04  4.503e-03   0.201     0.84    
-## I(I(age - 3)^2) -5.053e-05  6.988e-05  -0.723     0.47    
+## (Intercept)      3.4840596  0.1070816  32.536  < 2e-16 ***
+## I(age - 3)       0.0494426  0.0075061   6.587 5.34e-11 ***
+## I(I(age - 3)^2) -0.0006253  0.0001165  -5.368 8.62e-08 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.564 on 2797 degrees of freedom
-## Multiple R-squared:  0.002199,	Adjusted R-squared:  0.001485 
-## F-statistic: 3.082 on 2 and 2797 DF,  p-value: 0.04604
+## Residual standard error: 0.9402 on 2797 degrees of freedom
+## Multiple R-squared:  0.02394,	Adjusted R-squared:  0.02324 
+## F-statistic:  34.3 on 2 and 2797 DF,  p-value: 1.926e-15
 ```
 
 ```r
@@ -1662,65 +1706,67 @@ anova(pbfi_age_C, pbfi_age_C_sq)
 ```
 ## Analysis of Variance Table
 ## 
-## Model 1: C_mean ~ I(age - 3)
-## Model 2: C_mean ~ (I(age - 3)) + I(I(age - 3)^2)
-##   Res.Df    RSS Df Sum of Sq     F Pr(>F)
-## 1   2798 889.86                          
-## 2   2797 889.70  1   0.16636 0.523 0.4696
+## Model 1: C ~ I(age - 3)
+## Model 2: C ~ (I(age - 3)) + I(I(age - 3)^2)
+##   Res.Df    RSS Df Sum of Sq      F    Pr(>F)    
+## 1   2798 2498.1                                  
+## 2   2797 2472.6  1    25.473 28.815 8.617e-08 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ```r
 #Extraversion
-pbfi_age_E <- lm(E_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_E <- lm(E ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_E)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = E_mean ~ I(age - 3), data = psychbfi_mean)
+## lm(formula = E ~ I(age - 3), data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.80605 -0.37513 -0.00016  0.38438  2.04695 
+##     Min      1Q  Median      3Q     Max 
+## -3.2542 -0.6805  0.0985  0.7997  1.9554 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.8296073  0.0258967 147.880   <2e-16 ***
-## I(age - 3)  -0.0014723  0.0009222  -1.596    0.111    
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 3.990655   0.050512   79.00  < 2e-16 ***
+## I(age - 3)  0.005990   0.001799    3.33  0.00088 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5429 on 2798 degrees of freedom
-## Multiple R-squared:  0.00091,	Adjusted R-squared:  0.0005529 
-## F-statistic: 2.549 on 1 and 2798 DF,  p-value: 0.1105
+## Residual standard error: 1.059 on 2798 degrees of freedom
+## Multiple R-squared:  0.003947,	Adjusted R-squared:  0.003591 
+## F-statistic: 11.09 on 1 and 2798 DF,  p-value: 0.0008805
 ```
 
 ```r
-pbfi_age_E_sq <- lm(E_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_E_sq <- lm(E ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_E_sq)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = E_mean ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
+## lm(formula = E ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.80357 -0.38464  0.00044  0.39110  2.08387 
+##     Min      1Q  Median      3Q     Max 
+## -3.2540 -0.6583  0.1117  0.7843  2.0943 
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)      3.713e+00  6.180e-02  60.087   <2e-16 ***
-## I(age - 3)       7.304e-03  4.332e-03   1.686   0.0919 .  
-## I(I(age - 3)^2) -1.394e-04  6.723e-05  -2.073   0.0382 *  
+## (Intercept)      3.6586215  0.1204315  30.379  < 2e-16 ***
+## I(age - 3)       0.0310335  0.0084419   3.676 0.000241 ***
+## I(I(age - 3)^2) -0.0003978  0.0001310  -3.036 0.002418 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5426 on 2797 degrees of freedom
-## Multiple R-squared:  0.002443,	Adjusted R-squared:  0.00173 
-## F-statistic: 3.425 on 2 and 2797 DF,  p-value: 0.03267
+## Residual standard error: 1.057 on 2797 degrees of freedom
+## Multiple R-squared:  0.007219,	Adjusted R-squared:  0.006509 
+## F-statistic: 10.17 on 2 and 2797 DF,  p-value: 3.978e-05
 ```
 
 ```r
@@ -1730,67 +1776,67 @@ anova(pbfi_age_E, pbfi_age_E_sq)
 ```
 ## Analysis of Variance Table
 ## 
-## Model 1: E_mean ~ I(age - 3)
-## Model 2: E_mean ~ (I(age - 3)) + I(I(age - 3)^2)
-##   Res.Df    RSS Df Sum of Sq      F  Pr(>F)  
-## 1   2798 824.78                              
-## 2   2797 823.51  1    1.2658 4.2991 0.03822 *
+## Model 1: E ~ I(age - 3)
+## Model 2: E ~ (I(age - 3)) + I(I(age - 3)^2)
+##   Res.Df    RSS Df Sum of Sq      F   Pr(>F)   
+## 1   2798 3137.9                                
+## 2   2797 3127.6  1    10.308 9.2181 0.002418 **
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
 
 ```r
 #Openness
-pbfi_age_O <- lm(O_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_O <- lm(O ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_O)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = O_mean ~ I(age - 3), data = psychbfi_mean)
+## lm(formula = O ~ I(age - 3), data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.89189 -0.28326 -0.04947  0.32393  2.11962 
+##     Min      1Q  Median      3Q     Max 
+## -3.4510 -0.5535  0.0522  0.6408  1.5096 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.9048310  0.0267806 145.808   <2e-16 ***
-## I(age - 3)  -0.0014380  0.0009537  -1.508    0.132    
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 4.438791   0.038444 115.461  < 2e-16 ***
+## I(age - 3)  0.005735   0.001369   4.189 2.89e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5615 on 2798 degrees of freedom
-## Multiple R-squared:  0.0008119,	Adjusted R-squared:  0.0004548 
-## F-statistic: 2.273 on 1 and 2798 DF,  p-value: 0.1317
+## Residual standard error: 0.806 on 2798 degrees of freedom
+## Multiple R-squared:  0.006232,	Adjusted R-squared:  0.005877 
+## F-statistic: 17.55 on 1 and 2798 DF,  p-value: 2.891e-05
 ```
 
 ```r
-pbfi_age_O_sq <- lm(O_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_O_sq <- lm(O ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_O_sq)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = O_mean ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
+## lm(formula = O ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -2.8787 -0.2808 -0.0596  0.3242  2.1254 
+## -3.4635 -0.5559  0.0522  0.6362  1.5443 
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)      3.814e+00  6.393e-02  59.660   <2e-16 ***
-## I(age - 3)       5.418e-03  4.481e-03   1.209    0.227    
-## I(I(age - 3)^2) -1.089e-04  6.955e-05  -1.566    0.117    
+## (Intercept)      4.356e+00  9.179e-02  47.453   <2e-16 ***
+## I(age - 3)       1.199e-02  6.434e-03   1.863   0.0626 .  
+## I(I(age - 3)^2) -9.931e-05  9.986e-05  -0.994   0.3201    
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5613 on 2797 degrees of freedom
-## Multiple R-squared:  0.001687,	Adjusted R-squared:  0.0009732 
-## F-statistic: 2.363 on 2 and 2797 DF,  p-value: 0.09429
+## Residual standard error: 0.806 on 2797 degrees of freedom
+## Multiple R-squared:  0.006583,	Adjusted R-squared:  0.005873 
+## F-statistic: 9.268 on 2 and 2797 DF,  p-value: 9.737e-05
 ```
 
 ```r
@@ -1800,64 +1846,64 @@ anova(pbfi_age_O, pbfi_age_O_sq)
 ```
 ## Analysis of Variance Table
 ## 
-## Model 1: O_mean ~ I(age - 3)
-## Model 2: O_mean ~ (I(age - 3)) + I(I(age - 3)^2)
-##   Res.Df    RSS Df Sum of Sq     F Pr(>F)
-## 1   2798 882.04                          
-## 2   2797 881.27  1   0.77258 2.452 0.1175
+## Model 1: O ~ I(age - 3)
+## Model 2: O ~ (I(age - 3)) + I(I(age - 3)^2)
+##   Res.Df    RSS Df Sum of Sq      F Pr(>F)
+## 1   2798 1817.7                           
+## 2   2797 1817.0  1   0.64243 0.9889 0.3201
 ```
 
 ```r
 #Neuroticism
-pbfi_age_N <- lm(N_mean ~ I(age - 3), data = psychbfi_mean)
+pbfi_age_N <- lm(N ~ I(age - 3), data = psychbfi_mean)
 summary(pbfi_age_N)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = N_mean ~ I(age - 3), data = psychbfi_mean)
+## lm(formula = N ~ I(age - 3), data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.29815 -0.92212 -0.07131  0.86568  3.11773 
+##     Min      1Q  Median      3Q     Max 
+## -3.1177 -0.8657  0.0713  0.9221  2.2982 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.487186   0.056679  61.525  < 2e-16 ***
-## I(age - 3)  -0.012602   0.002018  -6.244 4.93e-10 ***
+##             Estimate Std. Error t value Pr(>|t|)    
+## (Intercept) 3.512810   0.056679  61.977  < 2e-16 ***
+## I(age - 3)  0.012603   0.002018   6.244 4.92e-10 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Residual standard error: 1.188 on 2798 degrees of freedom
 ## Multiple R-squared:  0.01374,	Adjusted R-squared:  0.01339 
-## F-statistic: 38.98 on 1 and 2798 DF,  p-value: 4.927e-10
+## F-statistic: 38.98 on 1 and 2798 DF,  p-value: 4.925e-10
 ```
 
 ```r
-pbfi_age_N_sq <- lm(N_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+pbfi_age_N_sq <- lm(N ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
 summary(pbfi_age_N_sq)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = N_mean ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
+## lm(formula = N ~ (I(age - 3)) + I(I(age - 3)^2), data = psychbfi_mean)
 ## 
 ## Residuals:
-##     Min      1Q  Median      3Q     Max 
-## -2.2702 -0.9006 -0.0600  0.8661  3.1460 
+##      Min       1Q   Median       3Q      Max 
+## -3.14600 -0.86614  0.06001  0.90056  2.27021 
 ## 
 ## Coefficients:
 ##                   Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)      3.2849854  0.1352925  24.281   <2e-16 ***
-## I(age - 3)       0.0026486  0.0094836   0.279   0.7800    
-## I(I(age - 3)^2) -0.0002422  0.0001472  -1.646   0.0999 .  
+## (Intercept)      3.7150045  0.1352926  27.459   <2e-16 ***
+## I(age - 3)      -0.0026480  0.0094836  -0.279   0.7801    
+## I(I(age - 3)^2)  0.0002422  0.0001472   1.646   0.0999 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
 ## Residual standard error: 1.188 on 2797 degrees of freedom
-## Multiple R-squared:  0.01469,	Adjusted R-squared:  0.01399 
+## Multiple R-squared:  0.0147,	Adjusted R-squared:  0.01399 
 ## F-statistic: 20.86 on 2 and 2797 DF,  p-value: 1.02e-09
 ```
 
@@ -1868,11 +1914,11 @@ anova(pbfi_age_N, pbfi_age_N_sq)
 ```
 ## Analysis of Variance Table
 ## 
-## Model 1: N_mean ~ I(age - 3)
-## Model 2: N_mean ~ (I(age - 3)) + I(I(age - 3)^2)
+## Model 1: N ~ I(age - 3)
+## Model 2: N ~ (I(age - 3)) + I(I(age - 3)^2)
 ##   Res.Df    RSS Df Sum of Sq      F  Pr(>F)  
 ## 1   2798 3950.9                              
-## 2   2797 3947.1  1    3.8226 2.7088 0.09991 .
+## 2   2797 3947.1  1    3.8224 2.7086 0.09992 .
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ```
@@ -1882,7 +1928,7 @@ anova(pbfi_age_N, pbfi_age_N_sq)
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = A_mean)) +
+  ggplot(aes(x = age, y = A)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -1898,7 +1944,7 @@ psychbfi_mean %>%
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = C_mean)) +
+  ggplot(aes(x = age, y = C)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -1914,7 +1960,7 @@ psychbfi_mean %>%
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = E_mean)) +
+  ggplot(aes(x = age, y = E)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -1930,7 +1976,23 @@ psychbfi_mean %>%
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(x = age, y = N_mean)) +
+  ggplot(aes(x = age, y = O)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Openness")
+```
+
+```
+## `geom_smooth()` using formula 'y ~ x'
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-24-4.png)<!-- -->
+
+```r
+psychbfi_mean %>% 
+  ggplot(aes(x = age, y = N)) +
   geom_point() +
   geom_smooth(method = "lm") +
   theme_minimal() +
@@ -1942,151 +2004,166 @@ psychbfi_mean %>%
 ## `geom_smooth()` using formula 'y ~ x'
 ```
 
-![](Untitled_files/figure-html/unnamed-chunk-24-4.png)<!-- -->
+![](Untitled_files/figure-html/unnamed-chunk-24-5.png)<!-- -->
 
 ### Do the Big Five traits differ across educational levels? Treat education as a categorical variable.
 
-#### Yes, agreeableness and neuroticism decrease with education.
+#### Yes, for agreeableness, conscientiousness, extraversion, and openness, not neuroticism.
 
 
 ```r
 #Agreeableness
-pbfi_edu_A <- lm(A_mean ~ education, data = psychbfi_mean)
+pbfi_edu_A <- lm(A ~ education, data = psychbfi_mean)
 summary(pbfi_edu_A)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = A_mean ~ education, data = psychbfi_mean)
+## lm(formula = A ~ education, data = psychbfi_mean)
 ## 
 ## Residuals:
 ##     Min      1Q  Median      3Q     Max 
-## -3.2496 -0.4496  0.1504  0.5504  1.8192 
+## -3.7591 -0.5591  0.0626  0.6409  1.4780 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  4.35278    0.04325 100.636  < 2e-16 ***
-## education   -0.03439    0.01281  -2.685  0.00729 ** 
+##                          Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               4.52202    0.05826  77.622  < 2e-16 ***
+## educationhs               0.06445    0.07744   0.832 0.405370    
+## educationsome college     0.23710    0.06327   3.748 0.000182 ***
+## educationcollege          0.09282    0.07296   1.272 0.203409    
+## educationgraduate degree  0.21534    0.07220   2.983 0.002885 ** 
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.7201 on 2575 degrees of freedom
+## Residual standard error: 0.8719 on 2572 degrees of freedom
 ##   (223 observations deleted due to missingness)
-## Multiple R-squared:  0.002793,	Adjusted R-squared:  0.002405 
-## F-statistic: 7.211 on 1 and 2575 DF,  p-value: 0.007292
+## Multiple R-squared:  0.009399,	Adjusted R-squared:  0.007858 
+## F-statistic: 6.101 on 4 and 2572 DF,  p-value: 6.962e-05
 ```
 
 ```r
 #Conscientiousness
-pbfi_edu_C <- lm(C_mean ~ education, data = psychbfi_mean)
+pbfi_edu_C <- lm(C ~ education, data = psychbfi_mean)
 summary(pbfi_edu_C)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = C_mean ~ education, data = psychbfi_mean)
+## lm(formula = C ~ education, data = psychbfi_mean)
 ## 
 ## Residuals:
-##    Min     1Q Median     3Q    Max 
-## -2.802 -0.402 -0.002  0.382  2.198 
+##     Min      1Q  Median      3Q     Max 
+## -3.3874 -0.6203  0.0793  0.7161  1.8793 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 3.754106   0.033677 111.475   <2e-16 ***
-## education   0.015966   0.009973   1.601     0.11    
+##                          Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               4.12068    0.06260  65.826  < 2e-16 ***
+## educationhs               0.10843    0.08322   1.303   0.1927    
+## educationsome college     0.26676    0.06798   3.924 8.94e-05 ***
+## educationcollege          0.09962    0.07840   1.271   0.2040    
+## educationgraduate degree  0.16321    0.07758   2.104   0.0355 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5607 on 2575 degrees of freedom
+## Residual standard error: 0.9369 on 2572 degrees of freedom
 ##   (223 observations deleted due to missingness)
-## Multiple R-squared:  0.0009944,	Adjusted R-squared:  0.0006064 
-## F-statistic: 2.563 on 1 and 2575 DF,  p-value: 0.1095
+## Multiple R-squared:  0.009125,	Adjusted R-squared:  0.007584 
+## F-statistic: 5.921 on 4 and 2572 DF,  p-value: 9.667e-05
 ```
 
 ```r
 #Extraversion
-pbfi_edu_E <- lm(E_mean ~ education, data = psychbfi_mean)
+pbfi_edu_E <- lm(E ~ education, data = psychbfi_mean)
 summary(pbfi_edu_E)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = E_mean ~ education, data = psychbfi_mean)
+## lm(formula = E ~ education, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.79804 -0.39619  0.00196  0.39827  2.00196 
+##     Min      1Q  Median      3Q     Max 
+## -3.2339 -0.6339  0.1435  0.7661  2.0243 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 3.792496   0.032452 116.864   <2e-16 ***
-## education   0.001847   0.009610   0.192    0.848    
+##                          Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               3.97567    0.07049  56.400  < 2e-16 ***
+## educationhs               0.21919    0.09371   2.339 0.019403 *  
+## educationsome college     0.25828    0.07655   3.374 0.000752 ***
+## educationcollege          0.08080    0.08828   0.915 0.360142    
+## educationgraduate degree  0.17828    0.08736   2.041 0.041381 *  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5403 on 2575 degrees of freedom
+## Residual standard error: 1.055 on 2572 degrees of freedom
 ##   (223 observations deleted due to missingness)
-## Multiple R-squared:  1.435e-05,	Adjusted R-squared:  -0.000374 
-## F-statistic: 0.03695 on 1 and 2575 DF,  p-value: 0.8476
+## Multiple R-squared:  0.006562,	Adjusted R-squared:  0.005017 
+## F-statistic: 4.247 on 4 and 2572 DF,  p-value: 0.001986
 ```
 
 ```r
 #Openness
-pbfi_edu_O <- lm(O_mean ~ education, data = psychbfi_mean)
+pbfi_edu_O <- lm(O ~ education, data = psychbfi_mean)
 summary(pbfi_edu_O)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = O_mean ~ education, data = psychbfi_mean)
+## lm(formula = O ~ education, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.87849 -0.28091 -0.07728  0.32151  2.12151 
+##     Min      1Q  Median      3Q     Max 
+## -3.1469 -0.5069  0.0931  0.6531  1.4931 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 3.874860   0.032935 117.653   <2e-16 ***
-## education   0.001211   0.009753   0.124    0.901    
+##                          Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               4.54687    0.05320  85.470  < 2e-16 ***
+## educationhs               0.06717    0.07072   0.950   0.3423    
+## educationsome college    -0.03998    0.05777  -0.692   0.4890    
+## educationcollege          0.13815    0.06663   2.074   0.0382 *  
+## educationgraduate degree  0.27968    0.06593   4.242 2.29e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5483 on 2575 degrees of freedom
+## Residual standard error: 0.7962 on 2572 degrees of freedom
 ##   (223 observations deleted due to missingness)
-## Multiple R-squared:  5.983e-06,	Adjusted R-squared:  -0.0003824 
-## F-statistic: 0.01541 on 1 and 2575 DF,  p-value: 0.9012
+## Multiple R-squared:  0.02149,	Adjusted R-squared:  0.01997 
+## F-statistic: 14.12 on 4 and 2572 DF,  p-value: 2.103e-11
 ```
 
 ```r
 #Neuroticism
-pbfi_edu_N <- lm(N_mean ~ education, data = psychbfi_mean)
+pbfi_edu_N <- lm(N ~ education, data = psychbfi_mean)
 summary(pbfi_edu_N)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = N_mean ~ education, data = psychbfi_mean)
+## lm(formula = N ~ education, data = psychbfi_mean)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.24928 -0.94248 -0.08908  0.85752  2.96432 
+## -2.93629 -0.86950  0.06471  0.93050  2.25580 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.30268    0.07153  46.169   <2e-16 ***
-## education   -0.05340    0.02118  -2.521   0.0118 *  
+##                          Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)               3.74420    0.07961  47.033   <2e-16 ***
+## educationhs               0.02104    0.10582   0.199   0.8424    
+## educationsome college     0.12530    0.08645   1.449   0.1474    
+## educationcollege          0.19210    0.09970   1.927   0.0541 .  
+## educationgraduate degree  0.19109    0.09866   1.937   0.0529 .  
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 1.191 on 2575 degrees of freedom
+## Residual standard error: 1.191 on 2572 degrees of freedom
 ##   (223 observations deleted due to missingness)
-## Multiple R-squared:  0.002462,	Adjusted R-squared:  0.002074 
-## F-statistic: 6.355 on 1 and 2575 DF,  p-value: 0.01177
+## Multiple R-squared:  0.002799,	Adjusted R-squared:  0.001249 
+## F-statistic: 1.805 on 4 and 2572 DF,  p-value: 0.1251
 ```
 
 #### Plotting
@@ -2094,171 +2171,185 @@ summary(pbfi_edu_N)
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(x = education, y = A_mean)) +
+  ggplot(aes(x = education, y = A)) +
   geom_col(position = "dodge") +
   theme_minimal() +
   xlab("Education") +
   ylab("Agreeableness")
 ```
 
-```
-## Warning: Removed 223 rows containing missing values (geom_col).
-```
-
 ![](Untitled_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
 
 ```r
 psychbfi_mean %>% 
-  ggplot(aes(x = education, y = N_mean)) +
+  ggplot(aes(x = education, y = C)) +
   geom_col(position = "dodge") +
   theme_minimal() +
   xlab("Education") +
-  ylab("Neuroticism")
-```
-
-```
-## Warning: Removed 223 rows containing missing values (geom_col).
+  ylab("Conscientiousness")
 ```
 
 ![](Untitled_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
 
+```r
+psychbfi_mean %>% 
+  ggplot(aes(x = education, y = E)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  xlab("Education") +
+  ylab("Extraversion")
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-26-3.png)<!-- -->
+
+```r
+psychbfi_mean %>% 
+  ggplot(aes(x = education, y = O)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  xlab("Education") +
+  ylab("Openness")
+```
+
+![](Untitled_files/figure-html/unnamed-chunk-26-4.png)<!-- -->
+
 ### How well do age and gender together predict the Big Five traits?
 
-#### A: AR2 = 0.03, C: AR2 = 0.00, E: AR2 = 0.00, O: AR2 = 0.00, N: AR2 = 0.03
+#### A: AR2 = 0.07, C: AR2 = 0.02, E: AR2 = 0.01, O: AR2 = 0.01, N: AR2 = 0.03
 
 
 ```r
 #Agreeableness
-pbfi_a_g_A <- lm(A_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_A <- lm(A ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_A)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = A_mean ~ age + gender, data = psychbfi_mean)
+## lm(formula = A ~ age + gender, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -3.04354 -0.42658  0.09612  0.52833  1.98867 
+##     Min      1Q  Median      3Q     Max 
+## -3.8370 -0.5217  0.1193  0.6201  1.7995 
 ## 
 ## Coefficients:
-##             Estimate Std. Error t value Pr(>|t|)    
-## (Intercept) 3.693013   0.060718  60.822  < 2e-16 ***
-## age         0.006442   0.001236   5.211 2.02e-07 ***
-## gender      0.202361   0.029292   6.908 6.04e-12 ***
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  3.987317   0.050126  79.547   <2e-16 ***
+## age          0.014211   0.001471   9.662   <2e-16 ***
+## genderfemale 0.380715   0.034847  10.925   <2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.727 on 2797 degrees of freedom
-## Multiple R-squared:  0.0273,	Adjusted R-squared:  0.0266 
-## F-statistic: 39.25 on 2 and 2797 DF,  p-value: < 2.2e-16
+## Residual standard error: 0.8649 on 2797 degrees of freedom
+## Multiple R-squared:  0.07393,	Adjusted R-squared:  0.07327 
+## F-statistic: 111.7 on 2 and 2797 DF,  p-value: < 2.2e-16
 ```
 
 ```r
 #Conscientiousness
-pbfi_a_g_C <- lm(C_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_C <- lm(C ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_C)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = C_mean ~ age + gender, data = psychbfi_mean)
+## lm(formula = C ~ age + gender, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.85290 -0.38922  0.00036  0.38441  2.19377 
+##     Min      1Q  Median      3Q     Max 
+## -3.3557 -0.6334  0.0803  0.7105  1.9494 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.9346839  0.0470832  83.569   <2e-16 ***
-## age         -0.0021945  0.0009587  -2.289   0.0221 *  
-## gender      -0.0400891  0.0227141  -1.765   0.0777 .  
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  3.866093   0.054557  70.863  < 2e-16 ***
+## age          0.009713   0.001601   6.068 1.47e-09 ***
+## genderfemale 0.178736   0.037928   4.712 2.57e-06 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5637 on 2797 degrees of freedom
-## Multiple R-squared:  0.003122,	Adjusted R-squared:  0.00241 
-## F-statistic:  4.38 on 2 and 2797 DF,  p-value: 0.01261
+## Residual standard error: 0.9413 on 2797 degrees of freedom
+## Multiple R-squared:  0.02165,	Adjusted R-squared:  0.02095 
+## F-statistic: 30.95 on 2 and 2797 DF,  p-value: 5.087e-14
 ```
 
 ```r
 #Extraversion
-pbfi_a_g_E <- lm(E_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_E <- lm(E ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_E)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = E_mean ~ age + gender, data = psychbfi_mean)
+## lm(formula = E ~ age + gender, data = psychbfi_mean)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.81409 -0.37426  0.00258  0.37650  2.05035 
+## -3.14491 -0.65596  0.06176  0.80387  2.10309 
 ## 
 ## Coefficients:
-##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.8539294  0.0453514  84.979   <2e-16 ***
-## age         -0.0014474  0.0009234  -1.568    0.117    
-## gender      -0.0123341  0.0218786  -0.564    0.573    
+##              Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)  3.830627   0.061065  62.731  < 2e-16 ***
+## age          0.005524   0.001792   3.083  0.00207 ** 
+## genderfemale 0.231428   0.042452   5.452 5.43e-08 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.543 on 2797 degrees of freedom
-## Multiple R-squared:  0.001024,	Adjusted R-squared:  0.0003092 
-## F-statistic: 1.433 on 2 and 2797 DF,  p-value: 0.2388
+## Residual standard error: 1.054 on 2797 degrees of freedom
+## Multiple R-squared:  0.01442,	Adjusted R-squared:  0.01371 
+## F-statistic: 20.46 on 2 and 2797 DF,  p-value: 1.509e-09
 ```
 
 ```r
 #Openness
-pbfi_a_g_O <- lm(O_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_O <- lm(O ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_O)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = O_mean ~ age + gender, data = psychbfi_mean)
+## lm(formula = O ~ age + gender, data = psychbfi_mean)
 ## 
 ## Residuals:
-##      Min       1Q   Median       3Q      Max 
-## -2.91600 -0.30102 -0.04416  0.33133  2.13269 
+##     Min      1Q  Median      3Q     Max 
+## -3.5258 -0.5466  0.0653  0.6355  1.5486 
 ## 
 ## Coefficients:
 ##               Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  3.9701359  0.0468786  84.690   <2e-16 ***
-## age         -0.0013619  0.0009545  -1.427   0.1537    
-## gender      -0.0377924  0.0226154  -1.671   0.0948 .  
+## (Intercept)   4.487729   0.046630  96.241  < 2e-16 ***
+## age           0.005952   0.001368   4.350 1.41e-05 ***
+## genderfemale -0.107752   0.032417  -3.324 0.000899 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
-## Residual standard error: 0.5613 on 2797 degrees of freedom
-## Multiple R-squared:  0.001808,	Adjusted R-squared:  0.001095 
-## F-statistic: 2.534 on 2 and 2797 DF,  p-value: 0.07954
+## Residual standard error: 0.8046 on 2797 degrees of freedom
+## Multiple R-squared:  0.01014,	Adjusted R-squared:  0.009434 
+## F-statistic: 14.33 on 2 and 2797 DF,  p-value: 6.438e-07
 ```
 
 ```r
 #Neuroticism
-pbfi_a_g_N <- lm(N_mean ~ age + gender, data = psychbfi_mean)
+pbfi_a_g_N <- lm(N ~ age + gender, data = psychbfi_mean)
 summary(pbfi_a_g_N)
 ```
 
 ```
 ## 
 ## Call:
-## lm(formula = N_mean ~ age + gender, data = psychbfi_mean)
+## lm(formula = N ~ age + gender, data = psychbfi_mean)
 ## 
 ## Residuals:
 ##      Min       1Q   Median       3Q      Max 
-## -2.41381 -0.93445 -0.06786  0.83853  3.02403 
+## -3.02403 -0.83852  0.06787  0.93445  2.41381 
 ## 
 ## Coefficients:
-##              Estimate Std. Error t value Pr(>|t|)    
-## (Intercept)  2.991565   0.098416  30.397  < 2e-16 ***
-## age         -0.013268   0.002004  -6.621 4.26e-11 ***
-## gender       0.330534   0.047478   6.962 4.17e-12 ***
+##               Estimate Std. Error t value Pr(>|t|)    
+## (Intercept)   3.677900   0.068294  53.854  < 2e-16 ***
+## age           0.013268   0.002004   6.621 4.25e-11 ***
+## genderfemale -0.330540   0.047478  -6.962 4.17e-12 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 ## 
