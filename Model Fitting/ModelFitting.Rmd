@@ -337,7 +337,8 @@ psychbfi_mean %>%
 #### Agreeableness increases with age and there seems to be support for a squared trend. Conscientiousness appears to increase with age, squared trend. Extraversion may increase with age, squared trend. Openness appears to increase with age, linear trend. Neuroticism seems to increase with age, linear trend.
 
 ```{r}
-describe(psychbfi_mean$age) #min = 3
+psychbfi_mean %>% 
+  summarise(min_age = min(age), na.rm = TRUE) #min = 3
 
 #Agreeableness
 pbfi_age_A <- lm(A ~ I(age - 3), data = psychbfi_mean)
