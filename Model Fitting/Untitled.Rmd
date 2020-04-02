@@ -217,8 +217,6 @@ anova(mod_europe, mod_europe_yrsq)
 ### Filtering/cleaning data
 
 ```{r}
-psych::bfi
-
 psychbfi_mean <-
   psych::bfi %>% 
   rownames_to_column(var = "ID") %>% 
