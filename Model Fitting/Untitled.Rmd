@@ -1,0 +1,568 @@
+---
+title: "Model_Fitting"
+author: "Ansley"
+date: "4/2/2020"
+output: 
+  html_document:
+    keep_md: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r allow errors, echo = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+## Loading Packages
+
+```{r}
+#install.packages("broom")
+
+library(tidyverse)
+library(gapminder)
+library(broom)
+library(dplyr)
+library(psych)
+set.seed(1234)
+theme_set(theme_minimal())
+```
+
+## Examples
+
+```{r}
+ggplot(modelr::sim1, aes(x, y)) + 
+  geom_point() +
+  geom_smooth(method = "lm") #Adding a best-fit line (least squares)
+```
+
+# Model Fitting Elements
+
+## Method
+### e.g. linear
+
+## Formula
+### e.g. Y ~ X1 + X2
+
+# Trying it out in base R
+
+## Fit a linear regression model to life expectancy (“Y”) from year (“X”) by filling in the formula. Only in Europe
+
+```{r}
+
+gapminder_europe <- filter(gapminder, continent == "Europe")
+
+mod_europe <- lm(lifeExp ~ year, data = gapminder_europe)
+mod_europe
+
+```
+
+### I() lets you make an arithmetic transformation so data is more meaningful
+
+```{r}
+mod_europe <- lm(lifeExp ~ I(year - 1952), data = gapminder_europe)
+mod_europe
+```
+
+```{r}
+class(mod_europe)
+is.list(mod_europe)
+str(mod_europe)
+names(mod_europe)
+summary(mod_europe)
+names(summary(mod_europe))
+```
+
+# Trying it out in Broom
+
+## broom::augment()
+## broom::tidy()
+## broom::glance()
+
+## Pulling predicted values and CI
+
+```{r}
+predict(mod_europe) #pulls predicted/fitted values for model
+
+predict(mod_europe, interval = "confidence") #or "conf"
+```
+
+## Predicting new dataset
+
+```{r}
+new_data_france <- tibble(year = c(1955, 1964, 1971, 1998, 2000, 2006))
+predict(mod_europe, newdata = new_data_france, interval = TRUE)
+#Can do interval = "pred" for range of predicted values, rather than just mean
+
+#(remove error by removing interval command)
+```
+
+## Residuals
+
+### Difference between model predicted values and actual data for each case (e.g. evaluate model fit)
+
+```{r}
+resid(mod_europe)
+```
+
+## Augment
+
+### Returns fitted value, SE, residual, cooks, and some other good stuff. Useful for plotting (but can't return CI... sigh)
+
+```{r}
+augment(mod_europe, data = gapminder_europe)
+```
+
+### Remember, linear model assumes normal dist of resid!!
+
+```{r}
+augment(mod_europe, data = gapminder_europe) %>% 
+  ggplot(aes(x = .resid)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Model residuals") +
+  ylab("Count")
+
+```
+
+### Aaaand, linear models assumes homoscedasticity!!
+
+```{r}
+augment(mod_europe, data = gapminder_europe) %>% 
+  ggplot(aes(x = year, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Year") +
+  ylab("Model residuals")
+```
+
+## Model Coefficients
+
+```{r}
+coef(mod_europe)
+summary(mod_europe)
+confint(mod_europe) #CI for coefficients!
+
+#Orrrr instead of doing individually...
+
+tidy(mod_europe, conf.int = TRUE)
+#Yay!!
+
+```
+
+## Model Fit
+
+```{r}
+glance(mod_europe)
+#sigma is left over (residual) SD of Y after accounting for X
+#aka unexplained variance? 
+#Here, within a single year, countries' life expectancies have a SD of 3.85. Oooooh
+```
+
+## ANOVA Table
+```{r}
+anova(mod_europe)
+```
+
+## Categorical/Multivariate Models
+
+### Categorical
+
+```{r}
+mod_europe_country <- lm(lifeExp ~ country, data = gapminder_europe)
+mod_europe_country
+```
+
+### Multiple Predictors
+
+```{r}
+mod_europe_gdp <- lm(lifeExp ~ year + gdpPercap, data = gapminder_europe)
+mod_europe_gdp
+summary(mod_europe_gdp)
+```
+
+## Transform Variables
+
+```{r}
+mod_europe_lgdp <- lm(lifeExp ~ year + log(gdpPercap), data = gapminder_europe)
+mod_europe_lgdp
+
+mod_europe_yrsq <- lm(lifeExp ~ year + I(year^2), data = gapminder_europe)
+mod_europe_yrsq
+summary(mod_europe_yrsq)
+
+```
+
+## Interaction Terms
+
+```{r}
+mod_europe_interaction <- lm(lifeExp ~ year * log(gdpPercap), data = gapminder_europe)
+mod_europe_interaction
+summary(mod_europe_interaction)
+
+```
+
+## Compare nested models
+
+```{r}
+anova(mod_europe, mod_europe_yrsq)
+
+#Just bc it's sig. doesn't mean you have to go with the "better" model. B says it "only slightly improves the model fit" so it's most likely linear.
+```
+
+## Activity
+
+### Filtering/cleaning data
+
+```{r}
+psych::bfi
+
+psychbfi_mean <-
+  psych::bfi %>% 
+  rownames_to_column(var = "ID") %>% 
+  as_tibble() %>% 
+  rowwise() %>% 
+  mutate(A_mean = mean(c(A1, A2, A3, A4, A5), na.rm = TRUE),
+        C_mean = mean(c(C1, C2, C3, C4, C5), na.rm = TRUE),
+        N_mean = round(mean(c(N1, N2, N3, N4, N5), na.rm = TRUE), 2),
+        O_mean = mean(c(O1, O2, O3, O4, O5), na.rm = TRUE),
+        E_mean = mean(c(E1, E2, E3, E4, E5), na.rm = TRUE))
+
+
+```
+
+### Do men and women differ on the Big Five traits? How big are the differences?
+
+#### Yes, women are more agreeable (B = 0.21) and neurotic (B = 0.32) than men. NS difference for conscientiousness, extraversion, openness.
+
+```{r}
+#Agreeableness
+pbfi_gender_A <- lm(A_mean ~ I(gender - 1), data = psychbfi_mean)
+summary(pbfi_gender_A)
+augment(pbfi_gender_A, data = psychbfi_mean)
+tidy(pbfi_gender_A, conf.int = TRUE)
+
+#Conscientiousness
+pbfi_gender_C <- lm(C_mean ~ I(gender - 1), data = psychbfi_mean)
+summary(pbfi_gender_C)
+
+#Extraversion
+pbfi_gender_E <- lm(E_mean ~ I(gender - 1), data = psychbfi_mean)
+summary(pbfi_gender_E)
+
+#Openness
+pbfi_gender_O <- lm(O_mean ~ I(gender - 1), data = psychbfi_mean)
+summary(pbfi_gender_O)
+
+#Neuroticism
+pbfi_gender_N <- lm(N_mean ~ I(gender - 1), data = psychbfi_mean)
+summary(pbfi_gender_N)
+
+```
+
+#### Graphing
+```{r}
+psychbfi_mean %>% 
+  group_by(gender) %>% 
+  summarize(meanA = mean(A_mean))
+
+psychbfi_mean %>% 
+  group_by(gender) %>% 
+  summarize(meanN = mean(N_mean))
+
+# For some reason the graphs are showing "6" as the value of A and N for both M and F.
+
+psychbfi_mean %>% 
+  ggplot(aes(gender, A_mean)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = c(1,2)) +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Agreeableness") 
+
+psychbfi_mean %>% 
+  ggplot(aes(gender, N_mean)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(breaks = c(1,2)) +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Neuroticism") 
+
+
+```
+
+### Do the Big Five traits increase or decrease with Age? Is there a linear or squared trend?
+
+#### Agreeableness increases with age and there seems to be support for a squared trend. Conscientiousness appears to decrease over age, linear trend. Extraversion may decrease over age, squared trend. No effect for age on openness. Neuroticism seems to decrease with age, linear trend.
+
+```{r}
+describe(psychbfi_mean$age) #min = 3
+
+#Agreeableness
+pbfi_age_A <- lm(A_mean ~ I(age - 3), data = psychbfi_mean)
+summary(pbfi_age_A)
+pbfi_age_A_sq <- lm(A_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+summary(pbfi_age_A_sq)
+anova(pbfi_age_A, pbfi_age_A_sq)
+
+#Conscientiousness
+pbfi_age_C <- lm(C_mean ~ I(age - 3), data = psychbfi_mean)
+summary(pbfi_age_C)
+pbfi_age_C_sq <- lm(C_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+summary(pbfi_age_C_sq)
+anova(pbfi_age_C, pbfi_age_C_sq)
+
+#Extraversion
+pbfi_age_E <- lm(E_mean ~ I(age - 3), data = psychbfi_mean)
+summary(pbfi_age_E)
+pbfi_age_E_sq <- lm(E_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+summary(pbfi_age_E_sq)
+anova(pbfi_age_E, pbfi_age_E_sq)
+
+#Openness
+pbfi_age_O <- lm(O_mean ~ I(age - 3), data = psychbfi_mean)
+summary(pbfi_age_O)
+pbfi_age_O_sq <- lm(O_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+summary(pbfi_age_O_sq)
+anova(pbfi_age_O, pbfi_age_O_sq)
+
+#Neuroticism
+pbfi_age_N <- lm(N_mean ~ I(age - 3), data = psychbfi_mean)
+summary(pbfi_age_N)
+pbfi_age_N_sq <- lm(N_mean ~ (I(age-3)) + I(I(age-3)^2), data = psychbfi_mean)
+summary(pbfi_age_N_sq)
+anova(pbfi_age_N, pbfi_age_N_sq)
+
+
+```
+
+#### Graphing
+
+```{r}
+psychbfi_mean %>% 
+  ggplot(aes(x = age, y = A_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Agreeableness")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = age, y = C_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Conscientiousness")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = age, y = E_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Extraversion")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = age, y = N_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Neuroticism")
+
+```
+
+### Do the Big Five traits differ across educational levels? Treat education as a categorical variable.
+
+#### Yes, agreeableness and neuroticism decrease with education.
+
+```{r}
+#Agreeableness
+pbfi_edu_A <- lm(A_mean ~ education, data = psychbfi_mean)
+summary(pbfi_edu_A)
+
+#Conscientiousness
+pbfi_edu_C <- lm(C_mean ~ education, data = psychbfi_mean)
+summary(pbfi_edu_C)
+
+#Extraversion
+pbfi_edu_E <- lm(E_mean ~ education, data = psychbfi_mean)
+summary(pbfi_edu_E)
+
+#Openness
+pbfi_edu_O <- lm(O_mean ~ education, data = psychbfi_mean)
+summary(pbfi_edu_O)
+
+#Neuroticism
+pbfi_edu_N <- lm(N_mean ~ education, data = psychbfi_mean)
+summary(pbfi_edu_N)
+
+```
+
+#### Plotting
+
+```{r}
+psychbfi_mean %>% 
+  ggplot(aes(x = education, y = A_mean)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  xlab("Education") +
+  ylab("Agreeableness")
+
+psychbfi_mean %>% 
+  ggplot(aes(x = education, y = N_mean)) +
+  geom_col(position = "dodge") +
+  theme_minimal() +
+  xlab("Education") +
+  ylab("Neuroticism")
+```
+
+### How well do age and gender together predict the Big Five traits?
+
+#### A: AR2 = 0.03, C: AR2 = 0.00, E: AR2 = 0.00, O: AR2 = 0.00, N: AR2 = 0.03
+
+```{r}
+
+#Agreeableness
+pbfi_a_g_A <- lm(A_mean ~ age + gender, data = psychbfi_mean)
+summary(pbfi_a_g_A)
+
+#Conscientiousness
+pbfi_a_g_C <- lm(C_mean ~ age + gender, data = psychbfi_mean)
+summary(pbfi_a_g_C)
+
+#Extraversion
+pbfi_a_g_E <- lm(E_mean ~ age + gender, data = psychbfi_mean)
+summary(pbfi_a_g_E)
+
+#Openness
+pbfi_a_g_O <- lm(O_mean ~ age + gender, data = psychbfi_mean)
+summary(pbfi_a_g_O)
+
+#Neuroticism
+pbfi_a_g_N <- lm(N_mean ~ age + gender, data = psychbfi_mean)
+summary(pbfi_a_g_N)
+
+```
+
+### In your models in part (4), do the residuals appear to be normally distributed? Are they consistent across age ranges and gender groups?
+
+#### Residuals appear normally distributed, although neuroticism appears platykurtic.
+
+```{r}
+augment(pbfi_a_g_A, data = psychbfi_mean) %>% 
+  ggplot(aes(x = .resid)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Model residuals") +
+  ylab("Count")
+
+augment(pbfi_a_g_C, data = psychbfi_mean) %>% 
+  ggplot(aes(x = .resid)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Model residuals") +
+  ylab("Count")
+
+augment(pbfi_a_g_E, data = psychbfi_mean) %>% 
+  ggplot(aes(x = .resid)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Model residuals") +
+  ylab("Count")
+
+augment(pbfi_a_g_O, data = psychbfi_mean) %>% 
+  ggplot(aes(x = .resid)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Model residuals") +
+  ylab("Count")
+
+augment(pbfi_a_g_N, data = psychbfi_mean) %>% 
+  ggplot(aes(x = .resid)) +
+  geom_histogram() +
+  theme_minimal() +
+  xlab("Model residuals") +
+  ylab("Count")
+
+```
+
+
+#### Appear to be consistent across age ranges and gender groups. 
+
+```{r}
+augment(pbfi_a_g_A, data = psychbfi_mean) %>% 
+  ggplot(aes(x = age, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_A, data = psychbfi_mean) %>% 
+  ggplot(aes(x = gender, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Gender") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_C, data = psychbfi_mean) %>% 
+  ggplot(aes(x = age, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_C, data = psychbfi_mean) %>% 
+  ggplot(aes(x = gender, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Gender") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_E, data = psychbfi_mean) %>% 
+  ggplot(aes(x = age, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_E, data = psychbfi_mean) %>% 
+  ggplot(aes(x = gender, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Gender") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_O, data = psychbfi_mean) %>% 
+  ggplot(aes(x = age, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_O, data = psychbfi_mean) %>% 
+  ggplot(aes(x = gender, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Gender") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_N, data = psychbfi_mean) %>% 
+  ggplot(aes(x = age, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Age") +
+  ylab("Model residuals")
+
+augment(pbfi_a_g_N, data = psychbfi_mean) %>% 
+  ggplot(aes(x = gender, y = .resid)) +
+  geom_point() +
+  theme_minimal() +
+  xlab("Gender") +
+  ylab("Model residuals")
+
+```
+
