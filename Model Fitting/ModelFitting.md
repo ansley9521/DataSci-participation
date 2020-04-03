@@ -24,7 +24,7 @@ library(tidyverse)
 ```
 
 ```
-## ── Attaching packages ────────────────────────────────────────────── tidyverse 1.3.0 ──
+## ── Attaching packages ────────────────────────────────── tidyverse 1.3.0 ──
 ```
 
 ```
@@ -35,7 +35,7 @@ library(tidyverse)
 ```
 
 ```
-## ── Conflicts ───────────────────────────────────────────────── tidyverse_conflicts() ──
+## ── Conflicts ───────────────────────────────────── tidyverse_conflicts() ──
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()
 ```
@@ -1500,63 +1500,56 @@ psychbfi_mean %>%
 ```
 
 ```r
-# For some reason the graphs are showing "6" as the value for both M and F.
-
-psychbfi_mean %>% 
-  ggplot(aes(gender, A)) +
-  geom_col(position = "dodge") +
-  theme_bw() +
-  xlab("Gender")+
-  ylab("Agreeableness") 
+psychbfi_mean %>%
+    ggplot(aes(gender, A, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Agreeableness")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(gender, C)) +
-  geom_col(position = "dodge") +
-  theme_bw() +
-  xlab("Gender")+
-  ylab("Conscientiousness") 
+psychbfi_mean %>%
+    ggplot(aes(gender, C, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Conscientiousness")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(gender, E)) +
-  geom_col(position = "dodge") +
-  theme_bw() +
-  xlab("Gender")+
-  ylab("Extraversion") 
+psychbfi_mean %>%
+    ggplot(aes(gender, E, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Extraversion")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-22-3.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(gender, O)) +
-  geom_col(position = "dodge") +
-  theme_bw() +
-  xlab("Gender")+
-  ylab("Openness") 
+psychbfi_mean %>%
+    ggplot(aes(gender, O, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Openness")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-22-4.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(gender, N)) +
-  geom_col(position = "dodge") +
-  scale_x_continuous(breaks = c(1,2)) +
-  theme_bw() +
-  xlab("Gender")+
-  ylab("Neuroticism") 
-```
-
-```
-## Error: Discrete value supplied to continuous scale
+psychbfi_mean %>%
+    ggplot(aes(gender, N, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Neuroticism")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-22-5.png)<!-- -->
@@ -1567,12 +1560,13 @@ psychbfi_mean %>%
 
 
 ```r
-describe(psychbfi_mean$age) #min = 3
+psychbfi_mean %>% 
+  summarise(min_age = min(age), na.rm = TRUE) #min = 3
 ```
 
 ```
-##    vars    n  mean    sd median trimmed   mad min max range skew kurtosis   se
-## X1    1 2800 28.78 11.13     26   27.43 10.38   3  86    83 1.02     0.56 0.21
+##   min_age na.rm
+## 1       3  TRUE
 ```
 
 ```r
@@ -1927,13 +1921,13 @@ anova(pbfi_age_N, pbfi_age_N_sq)
 
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = age, y = A)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_minimal() +
-  xlab("Age") +
-  ylab("Agreeableness")
+psychbfi_mean %>%
+    ggplot(aes(age, A)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Agreeableness")+
+    geom_smooth(method = "lm") 
 ```
 
 ```
@@ -1943,13 +1937,13 @@ psychbfi_mean %>%
 ![](ModelFitting_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = age, y = C)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_minimal() +
-  xlab("Age") +
-  ylab("Conscientiousness")
+psychbfi_mean %>%
+    ggplot(aes(age, C)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Conscientiousness")+
+    geom_smooth(method = "lm") 
 ```
 
 ```
@@ -1959,13 +1953,13 @@ psychbfi_mean %>%
 ![](ModelFitting_files/figure-html/unnamed-chunk-24-2.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = age, y = E)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_minimal() +
-  xlab("Age") +
-  ylab("Extraversion")
+psychbfi_mean %>%
+    ggplot(aes(age, E)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Extraversion")+
+    geom_smooth(method = "lm") 
 ```
 
 ```
@@ -1975,13 +1969,13 @@ psychbfi_mean %>%
 ![](ModelFitting_files/figure-html/unnamed-chunk-24-3.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = age, y = O)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_minimal() +
-  xlab("Age") +
-  ylab("Openness")
+psychbfi_mean %>%
+    ggplot(aes(age, O)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Openness")+
+    geom_smooth(method = "lm") 
 ```
 
 ```
@@ -1991,13 +1985,13 @@ psychbfi_mean %>%
 ![](ModelFitting_files/figure-html/unnamed-chunk-24-4.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = age, y = N)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  theme_minimal() +
-  xlab("Age") +
-  ylab("Neuroticism")
+psychbfi_mean %>%
+    ggplot(aes(age, N)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Neuroticism")+
+    geom_smooth(method = "lm") 
 ```
 
 ```
@@ -2170,48 +2164,59 @@ summary(pbfi_edu_N)
 
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = education, y = A)) +
-  geom_col(position = "dodge") +
-  theme_minimal() +
-  xlab("Education") +
-  ylab("Agreeableness")
+psychbfi_mean %>%
+    ggplot(aes(education, A, col = education)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Education")+
+    ylab("Agreeableness")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = education, y = C)) +
-  geom_col(position = "dodge") +
-  theme_minimal() +
-  xlab("Education") +
-  ylab("Conscientiousness")
+psychbfi_mean %>%
+    ggplot(aes(education, C, col = education)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Education")+
+    ylab("Conscientiousness")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = education, y = E)) +
-  geom_col(position = "dodge") +
-  theme_minimal() +
-  xlab("Education") +
-  ylab("Extraversion")
+psychbfi_mean %>%
+    ggplot(aes(education, E, col = education)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Education")+
+    ylab("Extraversion")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-26-3.png)<!-- -->
 
 ```r
-psychbfi_mean %>% 
-  ggplot(aes(x = education, y = O)) +
-  geom_col(position = "dodge") +
-  theme_minimal() +
-  xlab("Education") +
-  ylab("Openness")
+psychbfi_mean %>%
+    ggplot(aes(education, O, col = education)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Education")+
+    ylab("Openness")
 ```
 
 ![](ModelFitting_files/figure-html/unnamed-chunk-26-4.png)<!-- -->
+
+```r
+psychbfi_mean %>%
+    ggplot(aes(education, N, col = education)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Education")+
+    ylab("Neuroticism")
+```
+
+![](ModelFitting_files/figure-html/unnamed-chunk-26-5.png)<!-- -->
 
 ### How well do age and gender together predict the Big Five traits?
 
