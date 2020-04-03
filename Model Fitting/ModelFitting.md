@@ -24,7 +24,7 @@ library(tidyverse)
 ```
 
 ```
-## ── Attaching packages ────────────────────────────────── tidyverse 1.3.0 ──
+## ── Attaching packages ───────────────────────────────────────── tidyverse 1.3.0 ──
 ```
 
 ```
@@ -35,7 +35,7 @@ library(tidyverse)
 ```
 
 ```
-## ── Conflicts ───────────────────────────────────── tidyverse_conflicts() ──
+## ── Conflicts ──────────────────────────────────────────── tidyverse_conflicts() ──
 ## x dplyr::filter() masks stats::filter()
 ## x dplyr::lag()    masks stats::lag()
 ```
@@ -1500,6 +1500,33 @@ psychbfi_mean %>%
 ```
 
 ```r
+# Bar chart
+psychbfi_mean %>%
+  ggplot(aes(gender, A, fill = gender)) +
+  geom_bar(stat = "summary", fun.data = "mean_cl_normal") +
+  geom_errorbar(stat = "summary", fun.data = "mean_cl_normal", width = .2) +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Agreeableness")
+```
+
+![](ModelFitting_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+
+```r
+# BoxPlot
+psychbfi_mean %>%
+    ggplot(aes(gender, A, col = gender)) +
+    geom_point()+
+    geom_boxplot()+    
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Agreeableness")
+```
+
+![](ModelFitting_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+
+```r
+# Point with CI
 psychbfi_mean %>%
     ggplot(aes(gender, A, col = gender)) +
     stat_summary(fun.data = mean_cl_normal) +
@@ -1508,7 +1535,7 @@ psychbfi_mean %>%
     ylab("Agreeableness")
 ```
 
-![](ModelFitting_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](ModelFitting_files/figure-html/unnamed-chunk-22-3.png)<!-- -->
 
 ```r
 psychbfi_mean %>%
@@ -1519,7 +1546,7 @@ psychbfi_mean %>%
     ylab("Conscientiousness")
 ```
 
-![](ModelFitting_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](ModelFitting_files/figure-html/unnamed-chunk-22-4.png)<!-- -->
 
 ```r
 psychbfi_mean %>%
@@ -1530,7 +1557,7 @@ psychbfi_mean %>%
     ylab("Extraversion")
 ```
 
-![](ModelFitting_files/figure-html/unnamed-chunk-22-3.png)<!-- -->
+![](ModelFitting_files/figure-html/unnamed-chunk-22-5.png)<!-- -->
 
 ```r
 psychbfi_mean %>%
@@ -1541,7 +1568,7 @@ psychbfi_mean %>%
     ylab("Openness")
 ```
 
-![](ModelFitting_files/figure-html/unnamed-chunk-22-4.png)<!-- -->
+![](ModelFitting_files/figure-html/unnamed-chunk-22-6.png)<!-- -->
 
 ```r
 psychbfi_mean %>%
@@ -1552,7 +1579,7 @@ psychbfi_mean %>%
     ylab("Neuroticism")
 ```
 
-![](ModelFitting_files/figure-html/unnamed-chunk-22-5.png)<!-- -->
+![](ModelFitting_files/figure-html/unnamed-chunk-22-7.png)<!-- -->
 
 ### Do the Big Five traits increase or decrease with Age? Is there a linear or squared trend?
 
@@ -2166,7 +2193,8 @@ summary(pbfi_edu_N)
 ```r
 psychbfi_mean %>%
     ggplot(aes(education, A, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+
     theme_bw() +
     xlab("Education")+
     ylab("Agreeableness")
@@ -2177,7 +2205,8 @@ psychbfi_mean %>%
 ```r
 psychbfi_mean %>%
     ggplot(aes(education, C, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+     geom_point()+
+    geom_boxplot()+    
     theme_bw() +
     xlab("Education")+
     ylab("Conscientiousness")
@@ -2188,7 +2217,8 @@ psychbfi_mean %>%
 ```r
 psychbfi_mean %>%
     ggplot(aes(education, E, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+
     theme_bw() +
     xlab("Education")+
     ylab("Extraversion")
@@ -2199,7 +2229,8 @@ psychbfi_mean %>%
 ```r
 psychbfi_mean %>%
     ggplot(aes(education, O, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+    
     theme_bw() +
     xlab("Education")+
     ylab("Openness")
@@ -2210,7 +2241,8 @@ psychbfi_mean %>%
 ```r
 psychbfi_mean %>%
     ggplot(aes(education, N, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+    
     theme_bw() +
     xlab("Education")+
     ylab("Neuroticism")
