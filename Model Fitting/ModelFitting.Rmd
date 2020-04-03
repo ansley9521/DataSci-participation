@@ -300,6 +300,15 @@ psychbfi_mean %>%
   xlab("Gender")+
   ylab("Agreeableness")
 
+# BoxPlot
+psychbfi_mean %>%
+    ggplot(aes(gender, A, col = gender)) +
+    geom_point()+
+    geom_boxplot()+    
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Agreeableness")
+
 # Point with CI
 psychbfi_mean %>%
     ggplot(aes(gender, A, col = gender)) +
