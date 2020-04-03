@@ -1,0 +1,408 @@
+---
+title: "Functional Programming"
+author: "Ansley"
+date: "4/3/2020"
+output: 
+  html_document:
+    keep_md: true
+    theme: paper
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r allow errors, echo = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
+
+## Load Packages
+
+```{r}
+library(psychTools)
+library(tidyverse)
+library(gapminder)
+library(broom)
+library(dplyr)
+
+```
+
+```{r}
+bfi <- psychTools::bfi
+keys <- replace_na(psychTools::bfi.dictionary$Keying, 1)
+
+bfi_mean <- bfi %>% mutate_at(names(bfi)[keys == -1], ~ 7 - .x) %>% 
+  mutate(A = rowMeans(select(., A1:A5), na.rm = TRUE),
+         C = rowMeans(select(., C1:C5), na.rm = TRUE),
+         E = rowMeans(select(., E1:E5), na.rm = TRUE),
+         N = rowMeans(select(., N1:N5), na.rm = TRUE),
+         O = rowMeans(select(., O1:O5), na.rm = TRUE),
+         gender = recode_factor(gender, `1` = "male", `2` = "female"),
+         education = recode_factor(education, `1` = "some hs", 
+                                              `2` = "hs", 
+                                              `3` = "some college", 
+                                              `4` = "college",
+                                              `5` = "graduate degree")) %>% 
+  select(gender:O)
+
+```
+
+## map() applies the requested function to each column or element
+
+### “Take bfi_mean and select columns A through O. For each of these columns, predict the column using the lm() function with gender from the bfi_mean data frame as a predictor.”
+
+```{r}
+mods_gender <- 
+  bfi_mean %>% 
+  select(A:O) %>% 
+  map(~ lm(.x ~ gender, data = bfi_mean))
+
+```
+
+## Produces a *list* of models (LM), one for each big 5 trait
+
+```{r}
+map(mods_gender, summary)
+map(mods_gender, glance)
+map(mods_gender, tidy)
+
+```
+
+```{r}
+map(cars, mean)
+```
+
+## If you want to specify additional arguments, use ~
+
+```{r}
+map(cars, ~ mean(.x, trim = .1))
+```
+
+## When you use ~, in the function call, .x is a placeholder that means “whatever the current variable from the data frame is”
+
+### So for above, that would be all the columns of car
+
+```{r}
+map_dbl() #returns numeric vector instead of list
+
+rsq_gender <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map_dbl(~ lm(.x ~ gender, data = bfi_mean) %>% 
+                summary() %>% .$r.squared)
+rsq_gender
+
+# Gives us the R^2 of each.
+
+```
+
+```{r}
+map_dfc() #combines into columns
+map_dfr() #combines into rows
+
+coef_gender <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map_dfr(~ lm(.x ~ gender, data = bfi_mean) %>% 
+                coef(),
+            .id = "Trait")
+coef_gender
+
+```
+
+```{r}
+coef_summary_gender <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map_dfr(~ lm(.x ~ gender, data = bfi_mean) %>% 
+                tidy(conf.int = TRUE),
+            .id = "Trait")
+coef_summary_gender
+```
+
+### There are other map functions, see ?map()
+
+## To prevent functions from getting too long...
+
+```{r}
+#Write function
+get_coef_summary_gender <- function(.x, data) {
+  mod <- lm(.x ~ gender, data = bfi_mean)
+  return(tidy(mod, conf.int = TRUE))
+}
+
+#Run map()
+coef_summary_gender <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map_dfr(get_coef_summary_gender, .id = "Trait")
+coef_summary_gender
+```
+
+## Advantages
+
+### 1. Your code is often more readable. 
+### 2. You can reuse the function multiple times throughout your analyses. 
+### 3. Its easier to fix bugs or typos you might make because your code is only in one spot.
+
+## Template
+
+```{r}
+function_name <- function(arguments) {
+  # function code
+  return(result) #optional
+}
+```
+
+## Name
+### How do we call it?
+
+## Arguments
+### What are its inputs?
+
+## Function Code
+### What do we do with inputs?
+
+```{r}
+# Can give default value with "="
+# Example
+plot_histogram <- function(data, color = "blue") {
+  tbl <- tibble(data = data)
+  ggplot(tbl, aes(x = data)) +
+  geom_histogram(color = color, fill = color)
+}
+
+# If the user of this function doesn't specify, the histogram will be blue
+
+simulated_data <- rnorm(100)
+plot_histogram(simulated_data)
+
+# Or you can specify 
+plot_histogram(simulated_data, color = "black")
+
+```
+
+# 12.6 Activities
+
+## Activity 1
+
+### Do men and women differ on the Big Five traits? How big are the differences?
+
+#### Yes, women are more agreeable (0.40), conscientious (0.19), and extraverted (0.24), and less neurotic (-0.32) and open (-0.10), than men.
+
+```{r}
+get_coef_summary_gender <- function(.x, data) {
+  mod <- lm(.x ~ gender, data = bfi_mean)
+  return(tidy(mod, conf.int = TRUE))
+}
+
+coef_summary_gender <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map_dfr(get_coef_summary_gender, .id = "Trait")
+coef_summary_gender
+
+```
+
+#### Plotting
+
+```{r}
+bfi_mean %>%
+    ggplot(aes(gender, A, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Agreeableness")
+
+bfi_mean %>%
+    ggplot(aes(gender, C, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Conscientiousness")
+
+bfi_mean %>%
+    ggplot(aes(gender, E, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Extraversion")
+
+bfi_mean %>%
+    ggplot(aes(gender, O, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Openness")
+
+bfi_mean %>%
+    ggplot(aes(gender, N, col = gender)) +
+    stat_summary(fun.data = mean_cl_normal) +
+    theme_bw() +
+    xlab("Gender")+
+    ylab("Neuroticism")
+```
+
+### Do the Big Five traits increase or decrease with Age? Is there a linear or squared trend?
+
+#### Yes, all increase with age.Also appears to be support for a squared trend for all, except neuroticism and openness (when comparing models).
+```{r}
+
+#Linear
+get_summary_age_lin <- function(.x, data) {
+  mod1 <- lm(.x ~ age, data = bfi_mean)
+  return(tidy(mod1, conf.int = TRUE))
+}
+
+coef_summ_age_lin <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+     map_dfr(get_summary_age_lin, .id = "Trait")
+coef_summ_age_lin
+
+# Squared
+get_summary_age <- function(.x, data) {
+  mod <- lm(.x ~ age + I(age^2), data = bfi_mean)
+   return(tidy(mod, conf.int = TRUE))
+}
+
+coef_summ_age <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+     map_dfr(get_summary_age, .id = "Trait")
+coef_summ_age
+
+# ANOVA
+compare_models <- function(.x, data) {
+  mod2 <- anova((lm(.x ~ age, data = bfi_mean)), (lm(.x ~ age + I(age^2), data = bfi_mean)))
+  return(summary(mod2))
+}
+
+compare_models_out <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map(compare_models)
+compare_models_out
+
+
+```
+
+#### Graphing
+
+```{r}
+bfi_mean %>%
+    ggplot(aes(age, A)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Agreeableness")+
+    geom_smooth(method = "lm") 
+
+bfi_mean %>%
+    ggplot(aes(age, C)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Conscientiousness")+
+    geom_smooth(method = "lm") 
+
+bfi_mean %>%
+    ggplot(aes(age, E)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Extraversion")+
+    geom_smooth(method = "lm") 
+
+bfi_mean %>%
+    ggplot(aes(age, O)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Openness")+
+    geom_smooth(method = "lm") 
+
+bfi_mean %>%
+    ggplot(aes(age, N)) +
+    stat_summary(fun.data = mean_cl_normal, geom = "point") +
+    theme_bw() +
+    xlab("Age")+
+    ylab("Neuroticism")+
+    geom_smooth(method = "lm") 
+```
+
+### Do the Big Five traits differ across educational levels? Treat education as a categorical variable.
+
+#### Yes
+
+```{r}
+get_summary_edu <- function(.x, data) {
+  mod <- lm(.x ~ education, data = bfi_mean)
+  return(summary(mod))
+}
+
+coef_summ_edu <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+     map(get_summary_edu)
+coef_summ_edu
+```
+
+#### Graphing
+
+```{r}
+bfi_mean %>%
+    ggplot(aes(education, A, col = education)) +
+    geom_point()+
+    geom_boxplot()+
+    theme_bw() +
+    xlab("Education")+
+    ylab("Agreeableness")
+
+bfi_mean %>%
+    ggplot(aes(education, C, col = education)) +
+     geom_point()+
+    geom_boxplot()+    
+    theme_bw() +
+    xlab("Education")+
+    ylab("Conscientiousness")
+
+bfi_mean %>%
+    ggplot(aes(education, E, col = education)) +
+    geom_point()+
+    geom_boxplot()+
+    theme_bw() +
+    xlab("Education")+
+    ylab("Extraversion")
+
+bfi_mean %>%
+    ggplot(aes(education, O, col = education)) +
+    geom_point()+
+    geom_boxplot()+    
+    theme_bw() +
+    xlab("Education")+
+    ylab("Openness")
+```
+
+### How well do age and gender together predict the Big Five traits?
+
+#### A: R2 = 0.07, C: R2 = 0.02, E: R2 = 0.01, N: R2 = 0.03, O: AR2 = 0.01
+
+
+```{r}
+rsq_age_gender <- 
+  bfi_mean %>% 
+    select(A:O) %>% 
+    map_dbl(~ lm(.x ~ age + gender, data = bfi_mean) %>% 
+                summary() %>% .$r.squared)
+rsq_age_gender
+```
+
+### In your models in part (4), do the residuals appear to be normally distributed? Are they consistent across age ranges and gender groups?
+
+#### Come back to this...
+
+```{r}
+
+```
+

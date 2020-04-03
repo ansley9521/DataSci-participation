@@ -455,35 +455,40 @@ summary(pbfi_edu_N)
 
 psychbfi_mean %>%
     ggplot(aes(education, A, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+
     theme_bw() +
     xlab("Education")+
     ylab("Agreeableness")
 
 psychbfi_mean %>%
     ggplot(aes(education, C, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+     geom_point()+
+    geom_boxplot()+    
     theme_bw() +
     xlab("Education")+
     ylab("Conscientiousness")
 
 psychbfi_mean %>%
     ggplot(aes(education, E, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+
     theme_bw() +
     xlab("Education")+
     ylab("Extraversion")
 
 psychbfi_mean %>%
     ggplot(aes(education, O, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+    
     theme_bw() +
     xlab("Education")+
     ylab("Openness")
 
 psychbfi_mean %>%
     ggplot(aes(education, N, col = education)) +
-    stat_summary(fun.data = mean_cl_normal) +
+    geom_point()+
+    geom_boxplot()+    
     theme_bw() +
     xlab("Education")+
     ylab("Neuroticism")
