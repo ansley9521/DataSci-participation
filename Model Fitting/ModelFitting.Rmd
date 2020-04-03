@@ -291,6 +291,16 @@ psychbfi_mean %>%
   group_by(gender) %>% 
   summarize(meanN = mean(N))
 
+# Bar chart
+psychbfi_mean %>%
+  ggplot(aes(gender, A, fill = gender)) +
+  geom_bar(stat = "summary", fun.data = "mean_cl_normal") +
+  geom_errorbar(stat = "summary", fun.data = "mean_cl_normal", width = .2) +
+  theme_bw() +
+  xlab("Gender")+
+  ylab("Agreeableness")
+
+# Point with CI
 psychbfi_mean %>%
     ggplot(aes(gender, A, col = gender)) +
     stat_summary(fun.data = mean_cl_normal) +
