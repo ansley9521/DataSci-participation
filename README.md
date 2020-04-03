@@ -11,6 +11,7 @@ Participation For Day | Link
 3/5/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Project%203-5-20)
 3/12/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Plotting/3-12)
 4/2/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Model%20Fitting)
+4/3/20 | [:file_folder:](https://github.com/ansley9521/DataSci-participation/tree/master/Functional%20Programming)
 
 
 *Please note, additional files and folders may be found within these folders*
