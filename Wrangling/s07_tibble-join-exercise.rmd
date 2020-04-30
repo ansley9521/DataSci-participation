@@ -7,23 +7,45 @@ output:
     theme: paper
 ---
 
-
-
-
 ## Requirements
 
 You will need data from Joey Bernhardt's `singer` R package for this exercise. 
 
 You can download the singer data from the `USF-Psych-DataSci/Classroom` repo:
 
+<!-- The following chunk allows errors when knitting -->
+
+```{r allow errors, echo = FALSE}
+knitr::opts_chunk$set(error = TRUE)
 ```
-songs <- read_csv("https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/songs.csv")
-locations <- read_csv(https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/loc.csv")
-```
+
+
 ```{r}
 songs <- read_csv("https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/songs.csv")
 locations <- read_csv("https://github.com/USF-Psych-DataSci/Classroom/raw/master/data/singer/loc.csv")
 
+```
+
+```{r}
+
+library(kableExtra)
+library(MBESS)
+library(papaja)
+library(psych)
+library(tidyverse)
+library(here)
+library(scales)
+library(tsibble)
+library(ggplot2)
+library(svglite)
+library(dplyr)
+library(ggthemes)
+library(broom)
+library(DescTools)
+library(aod)
+library(redoc)
+library(apaTables)
+library(plyr)
 ```
 
 
@@ -48,12 +70,6 @@ Load required packages:
 library(tidyverse)
 library(singer)
 knitr::opts_chunk$set(fig.width=4, fig.height=3, warning = FALSE, fig.align = "center")
-```
-
-<!-- The following chunk allows errors when knitting -->
-
-```{r allow errors, echo = FALSE}
-knitr::opts_chunk$set(error = TRUE)
 ```
 
 ## Exercise 1: `singer`

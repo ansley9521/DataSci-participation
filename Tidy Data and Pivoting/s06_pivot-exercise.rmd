@@ -26,6 +26,7 @@ knitr::opts_chunk$set(error = TRUE, warning = FALSE)
 
 ```{r}
 #Making data untidy
+hair_eye <- as_tibble(HairEyeColor) 
 haireye_untidy <- hair_eye %>% 
   mutate(eye = str_c(Eye, "_eyed")) %>% 
   pivot_wider(id_cols = Hair, names_from = eye, values_from = n)
